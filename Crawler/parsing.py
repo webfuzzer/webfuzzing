@@ -34,6 +34,7 @@ class ResponseParameter:
     def GetTagLink(self) -> dict:
           
         parser = BeautifulSoup(self.text, 'html.parser')
+        tags = ['a', 'form', '']
         for elements in parser.find_all('a')
 
     def JsonFileRead(self, Filename) -> (bool, str):    
