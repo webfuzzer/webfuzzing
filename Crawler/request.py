@@ -46,7 +46,7 @@ class request():
         for _ in self.options:
             self.options.add_argument(_)
 
-        self.drive = Chrome()
+        self.drive = Chrome(executable_path=)
 
         self.drive.implicitly_wait(3)
         self.drive.set_page_load_timeout(3)
