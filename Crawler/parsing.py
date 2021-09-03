@@ -1,16 +1,20 @@
-from urllib.parse import urlencode, parse_qs, quote, unquote, urlparse
-from selenium import Chrome, ChromeOptions
+from selenium.webdriver import Chrome, ChromeOptions
 import requests
 
 NT_PATH = './webdriver/wevdriver.exe'
 POSIX_PATH = './webdriver/wevdriver'
 
 class request():
-    def __init__(self, url, **args) -> None:
+    def __init__(self, url, conf, **args) -> None:
+
         self.sess = requests.sessions()
         self.url = url
-        args.setdefault('timeout', 3)
-        self.args = args
+
+        if conf:
+            self.CONFIG = ['headless', 'window-size=1920x1080', 'disable-gpu', 'no-sandbox', 'disable-dev-shm-usage']
+        else:
+            args.setdefault('timeout', 3)
+            self.args = args
 
     def get(self) -> dict:
 
@@ -37,5 +41,16 @@ class request():
         }
 
     def webdriver(self) -> str:
-        # selenium
-        pass
+        
+        self.options = ChromeOptions()
+        for _ in self.options:
+            self.options.add_argument(_)
+
+        self.drive = Chrome()
+
+        self.drive.implicitly_wait(3)
+        self.drive.set_page_load_timeout(3)
+
+        self.drive.get(self.url)
+
+        return self.drive.page_source
