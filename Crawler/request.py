@@ -1,56 +1,88 @@
 from selenium.webdriver import Chrome, ChromeOptions
 import requests
+import os
 
-NT_PATH = './webdriver/wevdriver.exe'
-POSIX_PATH = './webdriver/wevdriver'
+NT_PATH = './webdriver/chromedriver.exe'
+POSIX_PATH = './webdriver/chromedriver'
 
-class request():
-    def __init__(self, url, conf, **args) -> None:
+class request:
+    def __init__(self, url, conf = False, **args) -> None:
 
-        self.sess = requests.sessions()
+        self.sess = requests.Session()
         self.url = url
-
+        ##############
+        self.path = POSIX_PATH
+        # 셀레니움 chromedriver path
+        if os.name == "nt":
+            # windows일 경우
+            self.path = NT_PATH
+        ##############
         if conf:
-            self.CONFIG = ['headless', 'window-size=1920x1080', 'disable-gpu', 'no-sandbox', 'disable-dev-shm-usage']
+            self.CONFIG = ['window-size=1920x1080', 'disable-gpu', 'no-sandbox', 'disable-dev-shm-usage', 'headless']
         else:
             args.setdefault('timeout', 3)
+            # 좀 더 빠른 요청을 위해 timeout default 설정
             self.args = args
+            # cookies, headers 등 다양한 요청 관련 정보
 
     def get(self) -> dict:
 
-        res = self.sess.get(self.url, *self.args)
-
+        res = self.sess.get(self.url, **self.args)
+        # GET 메서드 요청
         return {
             'status': res.status_code,
             'history':res.history,
+            'headers':res.headers,
+            'cookies':res.cookies,
             'body':res.text,
             'url':res.url,
             'conn':res.ok,
         }
 
+
     def post(self) -> dict:
 
-        res = self.sess.post(self.url, *self.args)
+        res = self.sess.post(self.url, **self.args)
 
         return {
             'status': res.status_code,
             'history':res.history,
+            'headers':res.headers,
+            'cookies':res.cookies,
             'body':res.text,
             'url':res.url,
             'conn':res.ok,
         }
 
     def webdriver(self) -> str:
-        
-        self.options = ChromeOptions()
-        for _ in self.options:
-            self.options.add_argument(_)
+        try:
+            self.options = ChromeOptions()
+            for _ in self.CONFIG:
+                self.options.add_argument(_)
 
-        self.drive = Chrome(executable_path=)
+            self.drive = Chrome(executable_path=self.path, options=self.options)
 
-        self.drive.implicitly_wait(3)
-        self.drive.set_page_load_timeout(3)
+            self.drive.implicitly_wait(3)
+            self.drive.set_page_load_timeout(3)
 
-        self.drive.get(self.url)
+            self.drive.get(self.url)
 
-        return self.drive.page_source
+            self.drive.quit()
+
+            return {
+                'status': 200,
+                '':self.drive.page_source,
+            }
+        except Exception as e:
+            return {
+                'status': 500,
+                'msg':e,
+            }
+
+#r = request('https://www.google.com', cookies = {'a':'a'})
+#print(r.get()['body'])
+#print(r.get()['cookies'])
+#print(r.get()['body'])
+
+# r = request('https://www.google.com', conf=True)
+# print(r.webdriver())
