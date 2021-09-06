@@ -20,8 +20,6 @@ class request:
         if conf:
             self.CONFIG = ['window-size=1920x1080', 'disable-gpu', 'no-sandbox', 'disable-dev-shm-usage', 'headless']
         else:
-            args.setdefault('timeout', 3)
-            # 좀 더 빠른 요청을 위해 timeout default 설정
             self.args = args
             # cookies, headers 등 다양한 요청 관련 정보
 
