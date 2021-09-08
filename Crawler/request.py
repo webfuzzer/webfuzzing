@@ -35,6 +35,7 @@ class request:
             'body':res.text,
             'url':res.url,
             'conn':res.ok,
+            'request':res.request
         }
 
 
@@ -50,6 +51,7 @@ class request:
             'body':res.text,
             'url':res.url,
             'conn':res.ok,
+            'request':res.request
         }
 
     def webdriver(self) -> str:

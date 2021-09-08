@@ -1,121 +1,84 @@
-from urllib.parse import urlencode, parse_qs, quote, unquote, urlparse
+from urllib.parse import parse_qs, quote, unquote, urlparse, urlunparse, urljoin
 from tldextract import extract
 from bs4 import BeautifulSoup
 from request import *
 
 class Crawler:
-    def __init__(self, url, **args) -> None:
-        self.url = url
-
-        self._urlparams = urlparse(url)
-        self.tmp_tld = extract(self.url)
-
+    def __init__(self, url, sub = False, scheme='http',**reqinfo) -> None:
         self.tags = {
             'href':['a', 'link', 'area'],
             'src':['img', 'script', 'iframe'],
             'action':['form']
         }
+        UserAgent = {'User-Agent':'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/93.0.4577.63 Safari/537.36'}
 
-        user_agent = {
-            'User-Agent':'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/93.0.4577.63 Safari/537.36'
-        }
-
-        args.setdefault('timeout', 3)
-        args.setdefault('headers', user_agent)
-        
-        self.args = args
+        reqinfo.setdefault('timeout', 3)
+        reqinfo.setdefault('headers', UserAgent)
 
 
-    def tag(self, subdomain = False) -> None:
+        self.URLists = set()
+        self.url = url
+        self.redurl = url
+        self.sub = sub
+        self.reqinfo = reqinfo
+        self.MainURLParsing = urlparse(url)
 
-        r = request(self.url, **self.args)
+        self.getLinks(self.url)
 
-        body = r.get()['body']
-        soup = BeautifulSoup(body, 'html.parser')
-        self.url = []
+    def __call__(self) -> dict:
+        return self.URLists
 
-        for attribute, tagname in self.tags.items():
-            for element in soup.find_all(tagname):
-                self.url.append(element.get(attribute))
+    def getLinks(self, url = None) -> dict:
 
-        self.urlparser(subdomain)
+        requrl = self.LinkChecks(url)
 
-        for i in self.url:
-            print(i)
+        print(self.redurl)
 
-    def urlparser(self, subdomain = False) -> None:
+        if requrl:
+            try:
+                req = requests.get(requrl, **self.reqinfo)
+                if self.url != req.url:
+                    
+                    self.redurl = req.url
+                soup = BeautifulSoup(req.text, 'html.parser')
 
-        index = 0
-        temp = self.url
-        # for 으로 for i in self.url을 한다고 하여도 list.pop 으로 인해 요소가 삭제되면서 리스트 index를 잘못 잡게 되면서 몇개씩 건너뛰게 됨
-        '''
-        >>> 'bug'
-        'bug'
-        >>> index = 0
-        >>> a = [1,2,3,2,2,3,4,6,5,6]
-        >>> for i in a:
-        ...     if i%2 == 0:
-        ...             a.pop(index)
-        ...     index += 1
-        ...
-        2
-        2
-        4
-        6
-        >>> a
-        [1, 3, 2, 3, 6, 5]
-        >>> 'while'
-        'while'
-        >>> a = [1,2,3,2,2,3,4,6,5,6]
-        >>> index = 0
-        >>> while index < len(a):
-        ...     if a[index] % 2 == 0:
-        ...             a.pop(index)
-        ...     else:
-        ...             index += 1
-        ...
-        2
-        2
-        2
-        4
-        6
-        6
-        >>> a
-        [1, 3, 3, 5]
-        '''
-        # while을 이용하여 모든 요소 체크
-        while index < len(temp):
-            url = temp[index]
-            if url:
-                urlresult = urlparse(url)
+                for attribute, tagname in self.tags.items():
+                    for element in soup.find_all(tagname):
+                        if attribute in element.attrs:
+                            if element.attrs[attribute] not in self.URLists:
+                                NewLink = element.get(attribute)
+                                self.URLists.add(NewLink)
+                                self.getLinks(NewLink)
+            except:
+                pass
 
-                if (not urlresult.scheme in ['','http','https']) or (urlresult.path == '/' or not urlresult.path):
-                    # scheme가 '', 'http', 'https'이 들어있지 않은 경우 도는 경로가 / 이거나 없다면 요소 삭제
-                    self.url.pop(index)
+    def LinkChecks(self, url, scheme='http') -> str:
 
-                elif urlresult.netloc:
+        if url:
+            RequestURLString = urljoin(self.redurl, url)
+            return RequestURLString
 
-                    if subdomain:
-                        # 만약 subdomain까지 URL을 파싱해야되는 경우 True
-                        tld = extract(url)
-                        # subdomain, domain, suffix를 가져오기 위한 tldextract 모듈 사용
+            # tmpurl = urlparse(url)
 
-                        if (tld.domain + tld.suffix) != (self.tmp_tld.domain + self.tmp_tld.suffix):
-                            # 파싱한 URL의 domain + suffix와 요청한 URL의 domain + suffix가 일치하지 않는 경우 요소 삭제
-                            self.url.pop(index)
-                        else:
-                            index += 1
-                    else:
-                        if urlresult.netloc != self._urlparams.netloc:
-                            # 파싱한 url의 netloc와 요청한 URL의 netloc가 일치하지 않는 경우 요소 삭제
-                            self.url.pop(index)
+            # if tmpurl.netloc:
+            #     if tmpurl.netloc != self.MainURLParsing.netloc:
+            #         return
+            # if url[:2] == "//":
+            #     RequestURLString = f"{scheme}:{url}"
+            # elif url[0] == "#":
+            #     RequestURLString = f"{self.redurl}{url}"
+            # elif tmpurl.scheme:
+            #     RequestURLString = url
+            # else:
+            #     if tmpurl.path[0] == "/":
+            #         RequestURLString = f"{self.url}{tmpurl}"
+            #     elif tmpurl.path[:2] == "./":
 
-                        else:
-                            index += 1
-                else:
-                    index += 1
-            else:
-                self.url.pop(index)
+            #         RequestURLString = f"{self.redurl}{tmpurl[1:]}"
+            #     else:
+            #         RequestURLString = f"{self.redurl}/{tmpurl}"
 
-C = Crawler('https://www.naver.com')
-C.tag(subdomain=True)
+            # return RequestURLString
+    
+C = Crawler('http://localhost')
+print(C())
