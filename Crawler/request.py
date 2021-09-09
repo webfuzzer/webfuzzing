@@ -23,6 +23,9 @@ class request:
             self.args = args
             # cookies, headers 등 다양한 요청 관련 정보
 
+    def __getattr__(self, name: str) -> dict:
+        return getattr(self,name)
+
     def get(self) -> dict:
 
         res = self.sess.get(self.url, **self.args)
