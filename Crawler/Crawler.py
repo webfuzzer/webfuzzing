@@ -27,12 +27,12 @@ class Crawler:
 
         return self.QueryEmpty()
 
-    # def Crawler(self, url, **reqinfo) -> None:
-    #     self.url = url
+    def Crawler(self, url, **reqinfo) -> None:
+        self.url = url
 
-    #     if reqinfo: self.reqinfo = reqinfo
+        if reqinfo: self.reqinfo = reqinfo
 
-    #     return Crawler(self.url, **reqinfo)
+        return Crawler(self.url, **reqinfo)
 
     def getLinks(self, url = None) -> None:
 
@@ -84,13 +84,3 @@ class Crawler:
                     URListTemp.add(UNURL)
 
         return URListTemp
-            
-    
-C = Crawler('http://localhost')
-for i in C():
-    print(i)
-
-print("="*50)
-
-for i in C():
-    print(i)
