@@ -1,5 +1,7 @@
 from selenium.webdriver import Chrome, ChromeOptions
 import requests
+import asyncio
+import aiohttp
 import os
 
 NT_PATH = './webdriver/chromedriver.exe'

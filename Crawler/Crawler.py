@@ -1,6 +1,9 @@
 from urllib.parse import parse_qs, quote, unquote, urlparse, urlunparse, urljoin, urlencode
+from timeit import default_timer as dt
 from bs4 import BeautifulSoup
 from request import *
+import asyncio
+import aiohttp
 
 class Crawler:
     def __init__(self, url,**reqinfo) -> None:
@@ -84,3 +87,7 @@ class Crawler:
                     URListTemp.add(UNURL)
 
         return URListTemp
+
+C = Crawler('http://localhost')
+
+print(C())
