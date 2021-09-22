@@ -1,17 +1,17 @@
+from urllib.parse import urljoin
 from selenium.webdriver import Chrome, ChromeOptions
 import requests
-import asyncio
-import aiohttp
 import os
 
-NT_PATH = './webdriver/chromedriver.exe'
-POSIX_PATH = './webdriver/chromedriver'
+NT_PATH = r'C:\Users\MinUk\Documents\GitHub\Crawler\Crawler\webdriver\chromedriver.exe'
+POSIX_PATH = 'webdriver/chromedriver'
 
 class request:
     def __init__(self, url, conf = False, **args) -> None:
 
         self.sess = requests.Session()
         self.url = url
+        self.driver = False
         ##############
         self.path = POSIX_PATH
         # 셀레니움 chromedriver path
@@ -20,24 +20,31 @@ class request:
             self.path = NT_PATH
         ##############
         if conf:
-            self.CONFIG = ['window-size=1920x1080', 'disable-gpu', 'no-sandbox', 'disable-dev-shm-usage', 'headless']
+            self.CONFIG = ['window-size=1920x1080', 'disable-gpu', 'no-sandbox', 'disable-dev-shm-usage', '--log-level=3']
         else:
             self.args = args
             # cookies, headers 등 다양한 요청 관련 정보
-
     def __getattr__(self, name: str) -> dict:
         return getattr(self,name)
+
+    def set(self, url, **args) -> dict:
+        self.url = url
+        self.args = args
+
+        return self.get()
 
     def get(self) -> dict:
 
         res = self.sess.get(self.url, **self.args)
+
+        res.close()
         # GET 메서드 요청
         return {
             'status': res.status_code,
             'history':res.history,
             'headers':res.headers,
             'cookies':res.cookies,
-            'body':res.text,
+            'body':res.content.decode("utf-8", "replace"),
             'url':res.url,
             'conn':res.ok,
             'request':res.request
@@ -53,36 +60,62 @@ class request:
             'history':res.history,
             'headers':res.headers,
             'cookies':res.cookies,
-            'body':res.text,
+            'body':res.content.decode("utf-8", "replace"),
             'url':res.url,
             'conn':res.ok,
             'request':res.request
         }
 
-    def webdriver(self) -> str:
+    def driver_set(self, url, conf = False) -> str:
+        self.url = url
+        self.conf = conf
+        return self.driver_get()
+
+    def driver_get(self) -> str:
         try:
-            self.options = ChromeOptions()
-            for _ in self.CONFIG:
-                self.options.add_argument(_)
+            if self.driver:
+                self.drive.get(self.url)
 
-            self.drive = Chrome(executable_path=self.path, options=self.options)
+                return {
+                    'status': 200,
+                    'url':self.drive.current_url,
+                    'body':self.drive.page_source,
+                }
 
-            self.drive.implicitly_wait(3)
-            self.drive.set_page_load_timeout(3)
+            else:
+                return self.webdriver()
 
-            self.drive.get(self.url)
-
-            self.drive.quit()
-
-            return {
+        except:
+            {
                 'status': 200,
-                '':self.drive.page_source,
+                'url':self.drive.current_url,
+                'body':'',
             }
-        except Exception as e:
-            return {
-                'status': 500,
-                'msg':e,
-            }
+
+    def drive_quit(self) -> bool:
+        try:
+            self.drive.quit()
+            return True
+        except:
+            return False
+
+    def webdriver(self) -> str:
+        self.options = ChromeOptions()
+        for _ in self.CONFIG:
+            self.options.add_argument(_)
+        self.drive = Chrome(self.path, options=self.options)
+        self.drive.implicitly_wait(5)
+        self.drive.set_page_load_timeout(5)
+        self.drive.get(self.url)
+        self.driver = True
+        
+        return {
+            'status': 200,
+            'url':self.drive.current_url,
+            'body':self.drive.page_source,
+        }
+    def __del__(self) -> None:
+        self.sess.close()
 
 #r = request('https://www.google.com', cookies = {'a':'a'})
 #print(r.get()['body'])

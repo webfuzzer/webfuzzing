@@ -2,11 +2,11 @@ from urllib.parse import parse_qs, quote, unquote, urlparse, urlunparse, urljoin
 from timeit import default_timer as dt
 from bs4 import BeautifulSoup
 from request import *
-import asyncio
-import aiohttp
+import sys
+sys.setrecursionlimit(10000)
 
 class Crawler:
-    def __init__(self, url,**reqinfo) -> None:
+    def __init__(self, url, req_check = False,**reqinfo) -> None:
         self.tags = {
             'href':['a', 'link', 'area', 'base'],
             'src':['img', 'script', 'iframe', 'embed', 'audio', 'input', 'script', 'source', 'track', 'video'],
@@ -22,13 +22,23 @@ class Crawler:
         self.url = url
         self.redurl = url
         self.reqinfo = reqinfo
+        self.req_check = req_check
         self.MainURLParsing = urlparse(url)
+
+        if req_check:
+            self.reqs = request(url, conf=True)
+            self.tmp_req = self.reqs.webdriver()
+            self.check = True
+            
+        else:
+            self.reqs = request(url, **self.reqinfo)
+            self.tmp_req = self.reqs.get()
+            self.check = True
 
     def __call__(self) -> dict:
 
-        self.getLinks(self.url)
-
-        return self.QueryEmpty()
+        self.getLinks(self.redurl)
+        return self.URLists
 
     def Crawler(self, url, **reqinfo) -> None:
         self.url = url
@@ -40,41 +50,38 @@ class Crawler:
     def getLinks(self, url = None) -> None:
 
         requrl = self.LinkChecks(url)
+
         if requrl:
-            try:
-                req = request(requrl, **self.reqinfo).get()
-                
-                if req['status'] == 200:
+            if self.MainURLParsing.netloc == urlparse(requrl).netloc:
+                if self.check:
+                    if self.req_check:
+                        req = self.reqs.driver_set(requrl)
+                    else:
+                        req = self.reqs.get(requrl)
+                else:
+                    req = self.tmp_req
+                if self.url != req['url']:
+                    self.redurl = req['url']
+ 
+                soup = BeautifulSoup(req['body'], 'html.parser')
+                for attribute, tagname in self.tags.items():
+                    for element in soup.find_all(tagname):
+                        if attribute in element.attrs: # self.tags 리스트에 있는 속성이 존재하는지 체크
+                            if self.QueryEmpty(self.LinkChecks(element.attrs[attribute])) not in self.URLists: # 파싱한 엘리먼트의 속성(URL)이 self.URLists에 없으면 실행
+                                NewLink = element.get(attribute) # URL 수집
+                                self.URLists.add(self.QueryEmpty(self.LinkChecks(NewLink))) # URL 추가
+                                print(self.URLists)
+                                self.getLinks(NewLink) # 파싱한 URL으로 재귀 호출
 
-                    if self.url != req['url']:
-                        self.redurl = req['url']
-
-                    soup = BeautifulSoup(req['body'], 'html.parser')
-
-                    for attribute, tagname in self.tags.items():
-                        for element in soup.find_all(tagname):
-                            if attribute in element.attrs:
-                                if element.attrs[attribute] not in self.URLists:
-                                    NewLink = element.get(attribute)
-
-                                    self.URLists.add(NewLink)
-                                    self.getLinks(NewLink)
-            except:
-                pass
-
-    def LinkChecks(self, url) -> str:
+    def LinkChecks(self, url) -> str or None:
         if url:
             RequestURLString = urljoin(self.redurl, url)
             return RequestURLString
 
-    def QueryEmpty(self) -> set:
-
-        URListTemp = set()
-
-        for url in self.URLists:
-            if url:
-                URLParams = urlparse(url)
-
+    def QueryEmpty(self, url = None) -> set:
+        if url:
+            URLParams = urlparse(url)
+            if self.MainURLParsing.netloc == urlparse(url).netloc:
                 if URLParams.query:
                     QueryString = parse_qs(URLParams.query)
                     for key in QueryString.keys():
@@ -83,11 +90,19 @@ class Crawler:
                     UNURL = urljoin(
                         self.url, urlunparse(URLParams._replace(query  = QueryString))
                     )
+                    return UNURL
+                else:
+                    return url
+            return url
 
-                    URListTemp.add(UNURL)
+startime = dt()
 
-        return URListTemp
+# C = Crawler('https://developer.mozilla.org/ko/docs/Web', req_check = True)
+C = Crawler('https://itwiki.kr/', req_check = True)
 
-C = Crawler('http://localhost')
+#print(C.QueryEmpty('/index.php?title=%ED%8A%B9%EC%88%98:%EA%B3%84%EC%A0%95%EB%A7%8C%EB%93%A4%EA%B8%B0&returnto=%ED%8A%B9%EC%88%98:%EC%BA%A1%EC%B0%A8/help'))
 
 print(C())
+
+
+print(dt() - startime)
