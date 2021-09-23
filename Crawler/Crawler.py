@@ -52,6 +52,7 @@ class Crawler:
         requrl = self.LinkChecks(url)
 
         if requrl:
+            
             if self.MainURLParsing.netloc == urlparse(requrl).netloc:
                 if self.check:
                     if self.req_check:
@@ -67,10 +68,9 @@ class Crawler:
                 for attribute, tagname in self.tags.items():
                     for element in soup.find_all(tagname):
                         if attribute in element.attrs: # self.tags 리스트에 있는 속성이 존재하는지 체크
-                            if self.QueryEmpty(self.LinkChecks(element.attrs[attribute])) not in self.URLists: # 파싱한 엘리먼트의 속성(URL)이 self.URLists에 없으면 실행
+                            if self.QueryEmpty(element.attrs[attribute]) not in self.URLists: # 파싱한 엘리먼트의 속성(URL)이 self.URLists에 없으면 실행
                                 NewLink = element.get(attribute) # URL 수집
-                                self.URLists.add(self.QueryEmpty(self.LinkChecks(NewLink))) # URL 추가
-                                print(self.URLists)
+                                self.URLists.add(self.QueryEmpty(NewLink)) # URL 추가
                                 self.getLinks(NewLink) # 파싱한 URL으로 재귀 호출
 
     def LinkChecks(self, url) -> str or None:
@@ -80,8 +80,8 @@ class Crawler:
 
     def QueryEmpty(self, url = None) -> set:
         if url:
-            URLParams = urlparse(url)
-            if self.MainURLParsing.netloc == urlparse(url).netloc:
+            URLParams = urlparse(urljoin(self.redurl, url))
+            if self.MainURLParsing.netloc == URLParams.netloc:
                 if URLParams.query:
                     QueryString = parse_qs(URLParams.query)
                     for key in QueryString.keys():
@@ -93,14 +93,11 @@ class Crawler:
                     return UNURL
                 else:
                     return url
-            return url
 
 startime = dt()
 
 # C = Crawler('https://developer.mozilla.org/ko/docs/Web', req_check = True)
 C = Crawler('https://itwiki.kr/', req_check = True)
-
-#print(C.QueryEmpty('/index.php?title=%ED%8A%B9%EC%88%98:%EA%B3%84%EC%A0%95%EB%A7%8C%EB%93%A4%EA%B8%B0&returnto=%ED%8A%B9%EC%88%98:%EC%BA%A1%EC%B0%A8/help'))
 
 print(C())
 
