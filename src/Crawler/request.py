@@ -13,6 +13,7 @@ class sessions:
         self.sess_check = False
         self.CONFIG = SELENIUM_CONFIG
         self.path = NT_PATH if os.name == "nt" else POSIX_PATH
+        self.driver = False
 
         self.sess = requests.Session()
         
