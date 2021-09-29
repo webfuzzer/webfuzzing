@@ -4,7 +4,7 @@ from db import DATABASE
 import requests
 import os
 
-SELENIUM_CONFIG =['window-size=1920x1080', 'disable-gpu', 'no-sandbox', 'disable-dev-shm-usage', '--log-level=3', 'headless']
+SELENIUM_CONFIG =['window-size=1920x1080', 'disable-gpu', 'no-sandbox', 'disable-dev-shm-usage', '--log-level=3']
 
 class sessions:
     def __init__(self, url, **args) -> None:
@@ -12,7 +12,8 @@ class sessions:
         self.arguments = args
         self.sess_check = False
         self.CONFIG = SELENIUM_CONFIG
-        self.path = NT_PATH if os.name == "nt" else POSIX_PATH
+        self.path = os.getcwd() + "\\src\\Crawler" + (NT_PATH if os.name == "nt" else POSIX_PATH)
+        print(self.path)
         self.driver = False
 
         self.sess = requests.Session()
@@ -38,18 +39,30 @@ class sessions:
             'request':response.request
         }
 
+    def sess_set_get(self, url, **arguments) -> dict:
+        self.url = url
+        self.arguments = arguments
+
+        self.sess_get()
+
+    def sess_set_post(self, url, **arguments) -> dict:
+        self.url = url
+        self.arguments = arguments
+        
+        self.sess_get()
+
     def sess_get(self) -> dict:
 
         res = self.sess.get(self.url, **self.arguments)
 
-        return self.returns(res)
+        return self.sess_rtn(res)
 
 
     def sess_post(self) -> dict:
 
         res = self.sess.post(self.url, **self.arguments)
 
-        return self.returns(res)
+        return self.sess_rtn(res)
 
     def driver_get(self) -> str:
         try:
@@ -94,4 +107,4 @@ class sessions:
 
     def __del__(self) -> None:
         self.sess.close()
-        self.drive.quit()
+        if self.driver: self.drive.quit()

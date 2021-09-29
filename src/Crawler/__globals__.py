@@ -37,5 +37,5 @@ TIMEOUT = 3
 SELENIUM_CONFIG = ['window-size=1920x1080', 'disable-gpu', 'no-sandbox', 'disable-dev-shm-usage', 'headless', '--log-level=3']
 
 # webdriver Path
-NT_PATH = '/webdriver/chromedriver.exe'
+NT_PATH = '\\webdriver\\chromedriver.exe'
 POSIX_PATH = '/webdriver/chromedriver'
