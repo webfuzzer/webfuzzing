@@ -82,9 +82,3 @@ class URL:
                             )
                         )
         return
-
-C = URL('http://localhost/wordpress/', Page=True)
-
-print(C())
-
-print(dt() - startime)

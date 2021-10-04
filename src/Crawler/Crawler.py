@@ -1,4 +1,5 @@
 from db import DATABASE
+from request import *
 from URL import *
 
 class Crawler:

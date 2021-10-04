@@ -12,7 +12,7 @@ class sessions:
         self.arguments = args
         self.sess_check = False
         self.CONFIG = SELENIUM_CONFIG
-        self.path = os.getcwd() + "\\src\\Crawler" + (NT_PATH if os.name == "nt" else POSIX_PATH)
+        self.path = os.getcwd() + (NT_PATH if os.name == "nt" else POSIX_PATH)
         print(self.path)
         self.driver = False
 
