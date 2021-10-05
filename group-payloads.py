@@ -1,6 +1,6 @@
 from glob import glob
 
-DICTLIST = glob(".\\src\\payloads\\*")
+DICTLIST = glob(".\\src\\pay-box\\*")
 for FILE in DICTLIST:
     PAYLOADSLILELIST = glob(f"{FILE}\\*")
     tmppay = set()
@@ -8,5 +8,5 @@ for FILE in DICTLIST:
         with open(read, 'r', encoding='UTF-8') as fr:
             for pay in fr.readlines():
                 tmppay.add(pay)
-    with open(f'{FILE}\\payloads.txt', 'w+', encoding='UTF-8') as fw:
+    with open(f'{FILE.replace("pay-box", "payloads")}\\payloads.txt', 'w+', encoding='UTF-8') as fw:
         fw.writelines(tmppay)

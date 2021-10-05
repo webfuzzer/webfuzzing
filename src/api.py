@@ -1,5 +1,5 @@
 from .Crawler import *
-from .fuzzing import *
+from .payload import *
 
 class fuzz:
     def __init__(self) -> None:
