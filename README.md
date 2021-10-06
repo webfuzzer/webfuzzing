@@ -11,3 +11,5 @@
 ## Open Redirect Payloads
 
 + [https://github.com/cujanovic/Open-Redirect-Payloads](https://github.com/cujanovic/Open-Redirect-Payloads)
+
++ [https://github.com/payloadbox/open-redirect-payload-list](https://github.com/payloadbox/open-redirect-payload-list)
