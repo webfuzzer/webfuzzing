@@ -1,18 +1,15 @@
 from selenium.webdriver import Chrome, ChromeOptions
-from __globals__ import *
-from db import DATABASE
+from . import globals as var
 import requests
 import os
-
-SELENIUM_CONFIG =['window-size=1920x1080', 'disable-gpu', 'no-sandbox', 'disable-dev-shm-usage', '--log-level=3']
 
 class sessions:
     def __init__(self, url, **args) -> None:
         self.url = url
         self.arguments = args
         self.sess_check = False
-        self.CONFIG = SELENIUM_CONFIG
-        self.path = os.getcwd() + (NT_PATH if os.name == "nt" else POSIX_PATH)
+        self.CONFIG = var.SELENIUM_CONFIG
+        self.path = os.getcwd() + (var.NT_PATH if os.name == "nt" else var.POSIX_PATH)
         print(self.path)
         self.driver = False
 

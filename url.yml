@@ -1,4 +1,21 @@
+config:
+  db:
+    host:
+      - root
+    password:
+      - autoset
+    port:
+      - 3306
+    db:
+      isset:
+        - true
+      name:
+        - fuzzing
+
 static:
   - http://me2nuk.com
   - http://localhost/wordpress
   - http://localhost/
+
+dynamic:
+  - https://www.google.com

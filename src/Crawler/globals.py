@@ -34,7 +34,7 @@ USER_AGENT = {'User-Agent':'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKi
 TIMEOUT = 3
 
 # selenium bot ChromeOptions
-SELENIUM_CONFIG = ['window-size=1920x1080', 'disable-gpu', 'no-sandbox', 'disable-dev-shm-usage', 'headless', '--log-level=3']
+SELENIUM_CONFIG =['window-size=1920x1080', 'disable-gpu', 'no-sandbox', 'disable-dev-shm-usage', '--log-level=3']
 
 # webdriver Path
 NT_PATH = '\\src\\Crawler\\webdriver\\chromedriver.exe'

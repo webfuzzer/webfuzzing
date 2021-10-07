@@ -35,7 +35,7 @@ class DATABASE:
             assert domain
 
             cursor = self.conn.cursor()
-            cursor.execute(query=f'CREATE TABLE `{domain}`(first_url varchar(2048) NOT NULL, last_url varchar(2048) NOT NULL, body longtext)')
+            cursor.execute(query=f'CREATE TABLE `{domain}`(first_url varchar(2048) NOT NULL, last_url varchar(2048) NOT NULL, empty_url varchar(2048) NOT NULL, body longtext)')
             self.conn.commit()
         except:
             return False
