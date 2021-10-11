@@ -1,10 +1,10 @@
-from urllib.parse import parse_qs, quote, unquote, urlparse, urlunparse, urljoin, urlencode
+from urllib.parse import parse_qs, unquote, urlparse, urljoin, urlencode
 from bs4 import BeautifulSoup
 from .request import sessions
-from . import globals as var
+from . import __globals__ as var
+from base64 import b64encode
 from .db import DATABASE
 import tldextract
-import base64
 
 class Crawler:
     def __init__(self, URL, Page = False, db = {}, **REQUEST_INFO) -> None:
@@ -18,7 +18,8 @@ class Crawler:
         if db:
             self.conn = DATABASE(host = db['HOST'], port = db['PORT'], user = db['USER'], passwd = db['PASSWORD'], db = db['DB'])
         else:
-            self.conn = DATABASE(host = var.HOST, port = var.PORT, user = var.USER, passwd = var.PASSWORD, db = var.DB)
+            self.conn = DATABASE(host = var.HOST, port = var.PORT, user 
+            = var.USER, passwd = var.PASSWORD, db = var.DB)
 
         self.table = tldextract.extract(URL).domain
 
@@ -38,11 +39,8 @@ class Crawler:
         self.GetLinks(self.URL)
         return
 
-    def Crawler(self, url, **REQUEST_INFO) -> None:
-        self.url = url
-        if REQUEST_INFO: self.REQUEST_INFO = REQUEST_INFO
-
-        return Crawler(self.URL, **self.REQUEST_INFO)
+    def Crawler(self,  URL, Page = False, db = {}, **REQUEST_INFO) -> None:
+        return Crawler(URL = URL , Page=Page, db=db, **REQUEST_INFO)
 
     def __del__(self) -> dict:
         del self.REQUESTS
@@ -66,7 +64,7 @@ class Crawler:
                             if self.QueryStringValuEmpty(element.attrs[attribute]) not in self.URLists:
                                 NEWLink = element.get(attribute)
                                 tmp = self.QueryStringValuEmpty(NEWLink)
-                                self.conn.URL_INSERT(f"INSERT INTO {self.table}(first_url, last_url, empty_url, body) SELECT '{self.URL}', '{NEWLink}', '{tmp}','{base64.b64encode(REQ['body'].encode()).decode()}' FROM dual WHERE not exists(SELECT '' FROM {self.table} where empty_url='{tmp}');")
+                                self.conn.URL_INSERT(f"INSERT INTO {self.table}(first_url, last_url, empty_url, body) SELECT '{self.URL}', '{self.URLJOIN(NEWLink)}', '{tmp}','{b64encode(REQ['body'].encode()).decode()}' FROM dual WHERE not exists(SELECT '' FROM {self.table} where empty_url='{tmp}');")
                                 self.URLists.add(tmp)
                                 self.GetLinks(NEWLink)
 
