@@ -15,11 +15,8 @@ class Crawler:
         self.LatestURL = self.URL = URL
         REQUEST_INFO.setdefault('timeout', var.TIMEOUT)
         REQUEST_INFO.setdefault('headers', var.USER_AGENT)
-        if db:
-            self.conn = DATABASE(host = db['HOST'], port = db['PORT'], user = db['USER'], passwd = db['PASSWORD'], db = db['DB'])
-        else:
-            self.conn = DATABASE(host = var.HOST, port = var.PORT, user 
-            = var.USER, passwd = var.PASSWORD, db = var.DB)
+    
+        self.conn = DATABASE(host = db['HOST'], port = db['PORT'], user = db['USER'], passwd = db['PASSWORD'], db = db['DB'])
 
         self.table = tldextract.extract(URL).domain
 

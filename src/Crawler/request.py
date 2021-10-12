@@ -1,5 +1,5 @@
 from selenium.webdriver import Chrome, ChromeOptions
-from . import globals as var
+from . import __globals__ as var
 import requests
 import os
 

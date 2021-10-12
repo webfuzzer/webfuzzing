@@ -8,7 +8,7 @@ config:
       - 3306
     db:
       isset:
-        - true
+        - false
       name:
         - fuzzing
 

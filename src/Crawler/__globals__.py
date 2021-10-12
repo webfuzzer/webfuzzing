@@ -40,8 +40,8 @@ SELENIUM_CONFIG =['window-size=1920x1080', 'disable-gpu', 'no-sandbox', 'disable
 NT_PATH = '\\src\\Crawler\\webdriver\\chromedriver.exe'
 POSIX_PATH = '/src/Crawler/webdriver/chromedriver'
 
-HOST = 'localhost'
-PORT = 3306
-USER = 'root'
-PASSWORD = 'autoset'
-DB = 'fuzzing'
+# HOST = 'localhost'
+# PORT = 3306
+# USER = 'root'
+# PASSWORD = 'autoset'
+# DB = 'fuzzing'

