@@ -1,16 +1,12 @@
 config:
   db:
-    host:
-      - root
-    password:
-      - autoset
-    port:
-      - 3306
+    host: localhost
+    user: root
+    password: autoset
+    port: 3306
     db:
-      isset:
-        - false
-      name:
-        - fuzzing
+      isset: true
+      name: fuzzing
 
 static:
   - http://me2nuk.com

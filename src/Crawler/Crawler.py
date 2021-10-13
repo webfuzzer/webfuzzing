@@ -44,13 +44,14 @@ class Crawler:
     
     def GetLinks(self, url = None) -> None:
         REQUESTS_URL = self.URLJOIN(url)
+        print(REQUESTS_URL)
 
         if REQUESTS_URL:
             if self.FirstURL.netloc == urlparse(REQUESTS_URL).netloc:
                 if self.Page:
                     REQ = self.REQUESTS.driver_set(REQUESTS_URL)
                 else:
-                    REQ = self.REQUESTS.sess_get()
+                    REQ = self.REQUESTS.sess_set_get(REQUESTS_URL)
                 if self.URL != REQ['url']:
                     self.LatestURL = REQ['url']
 
@@ -87,5 +88,11 @@ class Crawler:
                         )
         return
 
-# a = Crawler('http://localhost/wordpress', Page = True)
+# a = Crawler('http://localhost/wordpress', Page = True, db={
+#     'HOST':'localhost',
+#     'PORT':3306,
+#     'USER':'root',
+#     'PASSWORD':'autoset',
+#     'DB':'fuzzing'
+# })
 # a()

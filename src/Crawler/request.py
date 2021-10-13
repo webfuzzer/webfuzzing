@@ -1,7 +1,11 @@
 from selenium.webdriver import Chrome, ChromeOptions
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+
 from . import __globals__ as var
 import requests
 import os
+from time import sleep
 
 class sessions:
     def __init__(self, url, **args) -> None:
@@ -10,7 +14,6 @@ class sessions:
         self.sess_check = False
         self.CONFIG = var.SELENIUM_CONFIG
         self.path = os.getcwd() + (var.NT_PATH if os.name == "nt" else var.POSIX_PATH)
-        print(self.path)
         self.driver = False
 
         self.sess = requests.Session()
@@ -40,18 +43,17 @@ class sessions:
         self.url = url
         self.arguments = arguments
 
-        self.sess_get()
+        return self.sess_get()
 
     def sess_set_post(self, url, **arguments) -> dict:
         self.url = url
         self.arguments = arguments
         
-        self.sess_get()
+        return self.sess_get()
 
     def sess_get(self) -> dict:
 
         res = self.sess.get(self.url, **self.arguments)
-
         return self.sess_rtn(res)
 
 
@@ -66,6 +68,7 @@ class sessions:
 
             if self.driver:
                 self.drive.get(self.url)
+                sleep(2)
 
                 return {
                     'status': 200,
@@ -94,6 +97,7 @@ class sessions:
         self.drive.implicitly_wait(5)
         self.drive.set_page_load_timeout(5)
         self.drive.get(self.url)
+        WebDriverWait(self.drive, 3).until(EC.alert_is_present(), 'no alert')
         self.driver = True
         
         return {
