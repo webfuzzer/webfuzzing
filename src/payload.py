@@ -1,10 +1,12 @@
+from _typeshed import SupportsItemAccess
 from urllib.parse import parse_qs, unquote, urlparse, urljoin, urlencode
-from .Crawler import Crawler, DATABASE, sessions, var
+from .Crawler import Crawler, DATABASE, sessions, var, request
 from bs4 import BeautifulSoup
 from threading import Thread
 from base64 import b64decode
 import tldextract
-
+import selenium 
+from urllib.error import URLError, HTTPError
 
 class Fuzzing:
     def __init__(self, URL, Page = False, db = {}, **REQUEST_INFO) -> None:
@@ -17,8 +19,6 @@ class Fuzzing:
         REQUEST_INFO.setdefault('headers', var.USER_AGENT)
         if db:
             self.conn = DATABASE(host = db['HOST'], port = db['PORT'], user = db['USER'], passwd = db['PASSWORD'], db = db['DB'])
-        else:
-            self.conn = DATABASE(host = var.HOST, port = var.PORT, user = var.USER, passwd = var.PASSWORD, db = var.DB)
 
         self.table = tldextract.extract(URL).domain
 
@@ -35,12 +35,40 @@ class Fuzzing:
     def URL(self):
         self.conn.URL_SELECT(TABLE_NAME=self.table)
 
-    def xss():
-        payloads = []
+    def xss(self):
+        file = open("webfuzzing/payloads/xss/payloads.txt", "r")
         
-        return payloads
+        
+        for i in self.conn.URL_SELECT(TABLE_NAME=self.table):
+                    URL='last_url'
 
-    def opredirect():
+        while True:
+            pay = file.readline()
+            URL=URL.request(pay)
+
+            URL= request.urlopen(URL)
+
+            if request.method == 'GET':
+                try:
+                    exploit=request.get(URL,pay)
+                except HTTPError: 
+                    break
+            
+                if not pay:
+                    break
+            else : #request.method == 'POST':
+                try:
+                    exploit=request.post(URL,pay)
+                except HTTPError: 
+                    break
+            
+                if not pay:
+                    break
+        file.close()
+
+        return URL,URL.status,parameter,pay
+
+    def openredirect():
         payloads = [
             ''
         ]
