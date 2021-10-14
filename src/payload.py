@@ -67,17 +67,6 @@ class Fuzzing:
 
         return payloads
 
-    def simple_sqli(self):
-        payloads = [
-            '\'',
-            '"',
-            '0',
-            '0\'',
-            '0"',
-        ]
-
-        return payloads
-
     def sleep_sqli(self):
         payloads = [
             '\' or sleep(10) -- \'',
