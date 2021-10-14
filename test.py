@@ -9,7 +9,8 @@ for _ in options:
 driv = Chrome(os.getcwd() + '\\src\\Crawler\\webdriver\\chromedriver.exe', options=drive)
 driv.implicitly_wait(5)
 driv.set_page_load_timeout(5)
-driv.get('http://localhost')
-driv.get('http://localhost/search.php?search=<script>alert(1);</script>')
-result = driv.switch_to_alert()
+driv.get('http://localhost/')
+driv.get('http://localhost/search.php?search=<script>alert("hello");</script>')
+print(driv.page_source)
+result = driv.switch_to.alert
 print(result.text)

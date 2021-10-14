@@ -9,12 +9,6 @@ class DATABASE:
         self.passwd = passwd or None
         self.db = db or None
 
-        print(self.host)
-        print(port)
-        print(user)
-        print(passwd)
-        print(db)
-
         self.conn = connect(host = self.host, port = self.port, user = self.user, passwd = self.passwd, db = self.db, cursorclass=cursors.DictCursor)
 
     def URL_SELECT(self, TABLE_NAME, QUERY = None) -> (dict or tuple):

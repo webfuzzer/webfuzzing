@@ -8,10 +8,5 @@ config:
       isset: true
       name: fuzzing
 
-static:
-  - http://me2nuk.com
-  - http://localhost/wordpress
-  - http://localhost/
-
 dynamic:
-  - https://www.google.com
+  - http://localhost/

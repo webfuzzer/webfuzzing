@@ -1,5 +1,5 @@
 from urllib.parse import parse_qs, unquote, urlparse, urljoin, urlencode
-from Crawler import Crawler, DATABASE, sessions, var
+from .Crawler import Crawler, DATABASE, sessions, var
 from bs4 import BeautifulSoup
 from threading import Thread, ThreadError
 from base64 import b64decode
@@ -22,31 +22,27 @@ class Fuzzing:
 
         self.REQUEST_INFO = REQUEST_INFO
         self.URLJOIN = (lambda TMPURL: urljoin(self.URL, TMPURL) if TMPURL else None)
-        
-        # if Page:
-        #     self.REQUESTS = sessions(URL, **REQUEST_INFO)
-        #     self.TMP_REQUEST = self.REQUESTS.webdriver()
-        # else:
-        #     self.REQUESTS = sessions(URL, **REQUEST_INFO)
-        #     self.TMP_REQUEST = self.REQUESTS.sess_get()
 
-        self.xss('http://localhost/search.php?search=')
+        self.DB_URL()
+        
 
     def DB_URL(self) -> list:
         for i in self.conn.URL_SELECT(TABLE_NAME=self.table):
-            yield i['last_url']
+            self.xss(i['last_url'])
 
     def xss(self, url, **REQ):
         payloads = [
             '<script>alert(1);</script>',
             '"><script>alert(1);</script>',
             '\'><script>alert(1);</script>',
+            '"><script>alert(1);</script><"',
+            '\'><script>alert(1);</script><\'',
         ]
         
         assert url
 
-        REQUEST = sessions(url, **REQ)
-
+        REQUEST = sessions(self.LatestURL, **REQ)
+        REQUEST.webdriver()
         explurl = urlparse(url)
 
         if explurl.query:
@@ -56,20 +52,13 @@ class Fuzzing:
                     qs[key] = pay
                     rq = REQUEST.sess_set_get(explurl._replace(query=urlencode(qs, doseq=True)).geturl())
                     if pay in rq['body']:
-                        #print("requests : ",REQUEST.url)
                         
-                        rs = REQUEST.driver_set('http://localhost/search.php?search=<script>alert("hello");</script>')
-                        try:
-                            alert = REQUEST.drive.switch_to.alert()
-                            print(alert.text)
+                        rs = REQUEST.DriveAlertCheck(REQUEST.url)
+                        if rs['alert']:
+                            print(f"XSS 취약점이 발생되는 URL 감지! : {REQUEST.url}")
                             break
 
-                        except Exception as e:
-                            print(e)
-
-
-        # REQUEST = sessions(url, **REQ)
-        # REQUEST.sess_get(url)
+        REQUEST.drive.quit()
 
     def openredirect(self):
         payloads = [
@@ -119,10 +108,10 @@ class Fuzzing:
 
         return payloads
 
-Fuzzing('http://localhost/', Page=True, db={
-    'HOST':'localhost',
-    'PORT':3306,
-    'USER':'root',
-    'PASSWORD':'autoset',
-    'DB':'fuzzing'
-})
+# Fuzzing('http://localhost/', Page=True, db={
+#     'HOST':'localhost',
+#     'PORT':3306,
+#     'USER':'root',
+#     'PASSWORD':'autoset',
+#     'DB':'fuzzing'
+# })

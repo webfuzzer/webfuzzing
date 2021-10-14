@@ -34,6 +34,7 @@ class Crawler:
 
     def __call__(self) -> dict:
         self.GetLinks(self.URL)
+        self.REQUESTS.drive.quit()
         return
 
     def Crawler(self,  URL, Page = False, db = {}, **REQUEST_INFO) -> None:
@@ -44,7 +45,6 @@ class Crawler:
     
     def GetLinks(self, url = None) -> None:
         REQUESTS_URL = self.URLJOIN(url)
-        print(REQUESTS_URL)
 
         if REQUESTS_URL:
             if self.FirstURL.netloc == urlparse(REQUESTS_URL).netloc:
@@ -54,12 +54,12 @@ class Crawler:
                     REQ = self.REQUESTS.sess_set_get(REQUESTS_URL)
                 if self.URL != REQ['url']:
                     self.LatestURL = REQ['url']
-
                 soup = BeautifulSoup(REQ['body'], 'html.parser')
                 for attribute, TagName in self.tags.items():
                     for element in soup.find_all(TagName):
                         if attribute in element.attrs:
                             if self.QueryStringValuEmpty(element.attrs[attribute]) not in self.URLists:
+                                print(element)
                                 NEWLink = element.get(attribute)
                                 tmp = self.QueryStringValuEmpty(NEWLink)
                                 self.conn.URL_INSERT(f"INSERT INTO {self.table}(first_url, last_url, empty_url, body) SELECT '{self.URL}', '{self.URLJOIN(NEWLink)}', '{tmp}','{b64encode(REQ['body'].encode()).decode()}' FROM dual WHERE not exists(SELECT '' FROM {self.table} where empty_url='{tmp}');")
@@ -87,12 +87,3 @@ class Crawler:
                             )
                         )
         return
-
-# a = Crawler('http://localhost/wordpress', Page = True, db={
-#     'HOST':'localhost',
-#     'PORT':3306,
-#     'USER':'root',
-#     'PASSWORD':'autoset',
-#     'DB':'fuzzing'
-# })
-# a()

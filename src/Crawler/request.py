@@ -1,11 +1,8 @@
 from selenium.webdriver import Chrome, ChromeOptions
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
-
 from . import __globals__ as var
+from urllib.parse import urljoin
 import requests
 import os
-from time import sleep
 
 class sessions:
     def __init__(self, url, **args) -> None:
@@ -68,8 +65,6 @@ class sessions:
 
             if self.driver:
                 self.drive.get(self.url)
-                sleep(2)
-
                 return {
                     'status': 200,
                     'url':self.drive.current_url,
@@ -87,24 +82,47 @@ class sessions:
                 'body':'',
             }
 
+    def WebDriverChromeWS(self) -> bool:
+        try:
+            self.options = ChromeOptions()
+
+            for _ in self.CONFIG:
+                self.options.add_argument(_)
+            self.options.add_experimental_option('excludeSwitches', ['enable-logging'])
+            
+            self.drive = Chrome(self.path, options=self.options)
+            self.drive.implicitly_wait(5)
+            self.drive.set_page_load_timeout(5)
+            self.drive.get(urljoin(self.url,"/"))
+            self.driver = True
+
+            return True
+        except:
+            return False
+
     def webdriver(self) -> str:
-        self.options = ChromeOptions()
-
-        for _ in self.CONFIG:
-            self.options.add_argument(_)
-
-        self.drive = Chrome(self.path, options=self.options)
-        self.drive.implicitly_wait(5)
-        self.drive.set_page_load_timeout(5)
-        self.drive.get(self.url)
-        WebDriverWait(self.drive, 3).until(EC.alert_is_present(), 'no alert')
-        self.driver = True
+        self.WebDriverChromeWS()
         
         return {
             'status': 200,
             'url':self.drive.current_url,
             'body':self.drive.page_source,
         }
+
+    def DriveAlertCheck(self, url) -> dict:
+        if not self.driver:
+            self.WebDriverChromeWS()
+        self.drive.get(url)
+
+        try:
+            Alert = self.drive.switch_to.alert
+            return {
+                'alert':Alert.text
+            }
+        except:
+            return {
+                'alert':None
+            }
 
     def __del__(self) -> None:
         self.sess.close()
