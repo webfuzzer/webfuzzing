@@ -1,6 +1,0 @@
-pymysql
-selenium
-bs4
-requests
-tldextract
-pyyaml
