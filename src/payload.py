@@ -24,7 +24,6 @@ class Fuzzing:
         self.URLJOIN = (lambda TMPURL: urljoin(self.URL, TMPURL) if TMPURL else None)
 
         self.DB_URL()
-        
 
     def DB_URL(self) -> list:
         for i in self.conn.URL_SELECT(TABLE_NAME=self.table):
@@ -50,15 +49,18 @@ class Fuzzing:
             for key in qs.keys():
                 for pay in payloads:
                     qs[key] = pay
-                    rq = REQUEST.sess_set_get(explurl._replace(query=urlencode(qs, doseq=True)).geturl())
-                    if pay in rq['body']:
-                        
-                        rs = REQUEST.DriveAlertCheck(REQUEST.url)
-                        if rs['alert']:
-                            print(f"XSS 취약점이 발생되는 URL 감지! : {REQUEST.url}")
-                            break
+                    qurl = explurl._replace(query=urlencode(qs, doseq=True)).geturl()
+                    rq = REQUEST.sess_set_get(qurl)
 
-        REQUEST.drive.quit()
+
+                    # rq = REQUEST.sess_set_get(explurl._replace(query=urlencode(qs, doseq=True)).geturl())
+                    # if pay in rq['body']:
+                    #     rs = REQUEST.DriveAlertCheck(REQUEST.url)
+                    #     if rs['alert']:
+                    #         print(f"XSS 취약점이 발생되는 URL 감지! : {REQUEST.url}")
+                    #         break
+
+        # REQUEST.drive.quit()
 
     def openredirect(self):
         payloads = [

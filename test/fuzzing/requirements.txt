@@ -1,0 +1,5 @@
+pymysql
+bs4
+tldextract
+requests
+selenium
