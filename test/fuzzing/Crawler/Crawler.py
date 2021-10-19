@@ -60,25 +60,31 @@ class URL:
         해당 함수의 경우 다양한 필터링을 거쳐 self.tags에 있는 attrs들을 가지고 파싱하며 파싱한 URL, method, history length 등 다양한 정보를 Storage.DB.Engine를 통하여 /db/url.db에 정보를 저장 합니다.
         """
         # URL이 존재하는 경우 (False, None)인 경우 pass
+        URINFO = urlparse(URL)
+        URJOIN = self.URLJOIN(URL)
+
+        print(URJOIN)
+
         if URL:
             """
             해당 URL이 Crawling 대상 URL이 맞는지 urlparse를 이용하여 domain 부분 체크
             urlparse("https://www.google.com/path/example/?test=test").netloc -> www.google.com
             """
-            if urlparse(URL).netloc == self.FirstURLParse.netloc:
+            if urlparse(URJOIN).netloc == self.FirstURLParse.netloc:
                 try:
                     # self.sess.request => requests.Session().request
                     # 해당 URL에 요청
-                    Response = self.sess.request(method, URL, **self.info)
+                    Response = self.sess.request(method, URJOIN, **self.info)
                 except InvalidSchema:
                     # 만약 mail:me2nuk.com 같이 잘못된 schema으로 요청 할 경우 try except 으로 예외 처리하여 return None
-                    return
+                    pass
                 """"
                 URL join을 위해 경로 체크
                 urlparse("https://www.google.com/path/example/").path -> /path/example/
                 """
-                if urlparse(URL).path != self.CurrentURL.path:
-                    self.CurrentURL = Response.url
+                URLParseCurrentURL = urlparse(self.CurrentURL)
+                if URINFO.path != URLParseCurrentURL.path:
+                    self.CurrentURL = URLParseCurrentURL._replace(path=URINFO.path).geturl()
 
                 # elemtns 파싱을 위해 bs4 모듈 사용
                 htmlparser = BeautifulSoup(Response.text, 'html.parser')
