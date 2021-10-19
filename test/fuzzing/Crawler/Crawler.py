@@ -78,13 +78,13 @@ class URL:
                 except InvalidSchema:
                     # 만약 mail:me2nuk.com 같이 잘못된 schema으로 요청 할 경우 try except 으로 예외 처리하여 return None
                     return
-
+                self.CurrentURLCheck.add(self.qs_value_empty(URJOIN))
                 self.engine.add(
                     first_url = self.URL,
                     current_url = self.URLJOIN(URJOIN),
                     method = method,
                     history_len = len(Response.history),
-                    body = b64encode(Response.text.encode()).decode(),
+                    body = b64encode(Response.content.decode("utf-8", "replace").encode()).decode(),
                 )
                 """"
                 URL join을 위해 경로 체크
@@ -95,7 +95,7 @@ class URL:
                     self.CurrentURL = URLParseCurrentURL._replace(path=URINFO.path).geturl()
 
                 # elemtns 파싱을 위해 bs4 모듈 사용
-                htmlparser = BeautifulSoup(Response.text, 'html.parser')
+                htmlparser = BeautifulSoup(Response.content.decode("utf-8", "replace").encode(), 'html.parser')
                 # form 태그 찾기
                 form = htmlparser.find("form")
                 # 만약 form 태그가 존재하는 경우 / htmlparser.find 의 경우 없는 태그를 가져올려 하는 경우 None 반환
@@ -123,7 +123,6 @@ class URL:
                             # 가져온 URL을 이미 가져왔는지 and 해당 URL이 Crawling URL과 같은 domain인지 체크
                             if qs_value_empty_attr_in_link not in self.CurrentURLCheck and urlparse(self.URLJOIN(attr_in_link)).netloc == self.FirstURLParse.netloc:
                                 # 중복 체크를 위해 쿼리가 존재할 경우 값만 제거되는 URL 저장
-                                self.CurrentURLCheck.add(qs_value_empty_attr_in_link)
                                 # Storage.DB.Engine을 이용하여 sqlite db에 url 정보 저장
                                 # 하위 url 파싱을 위해 재귀 함수로 반복적인 호출
                                 self.GETLinks(URL = attr_in_link, method = method)

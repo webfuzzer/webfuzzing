@@ -35,3 +35,5 @@ class sessions:
         self.driver.implicitly_wait(5)
         self.driver.set_page_load_timeout(5)
         self.driver.get(url)
+
+        return self.driver
