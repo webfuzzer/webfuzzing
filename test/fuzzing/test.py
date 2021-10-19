@@ -14,12 +14,13 @@
 # for i in db.fetch():
 #     print(i.first_url, i.current_url, b64decode(i.body).decode())
 
-class Utils:
-    def __init__(self) -> None:
-        print(super.__init__())
+from sqlalchemy import create_engine, Table, select, MetaData
+from base64 import b64decode
 
-class Child(Utils):
-    def __init__(self) -> None:
-        pass
-
-Utils()
+engine = create_engine('sqlite:///db/url.db', echo=True)
+conn = engine.connect()
+Meta = MetaData()
+url = Table('me2nuk', Meta, autoload=True, autoload_with=engine)
+query = select([url.columns.current_url, url.columns.body]).where(url.columns.current_url=='https://me2nuk.com/SSRF-Gopher-Protocol-MySQL-Raw-Data-Exploit/')
+execute = conn.execute(query)
+print(b64decode(execute.fetchall()[0][1]).decode())

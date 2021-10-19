@@ -1,5 +1,6 @@
-pymysql
-bs4
 tldextract
+sqlalchemy
 requests
 selenium
+pyyaml
+bs4
