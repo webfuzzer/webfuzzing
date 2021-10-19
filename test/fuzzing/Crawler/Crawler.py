@@ -77,7 +77,15 @@ class URL:
                     Response = self.sess.request(method, URJOIN, **self.info)
                 except InvalidSchema:
                     # 만약 mail:me2nuk.com 같이 잘못된 schema으로 요청 할 경우 try except 으로 예외 처리하여 return None
-                    pass
+                    return
+
+                self.engine.add(
+                    first_url = self.URL,
+                    current_url = self.URLJOIN(URJOIN),
+                    method = method,
+                    history_len = len(Response.history),
+                    body = b64encode(Response.text.encode()).decode(),
+                )
                 """"
                 URL join을 위해 경로 체크
                 urlparse("https://www.google.com/path/example/").path -> /path/example/
@@ -117,13 +125,6 @@ class URL:
                                 # 중복 체크를 위해 쿼리가 존재할 경우 값만 제거되는 URL 저장
                                 self.CurrentURLCheck.add(qs_value_empty_attr_in_link)
                                 # Storage.DB.Engine을 이용하여 sqlite db에 url 정보 저장
-                                self.engine.add(
-                                    first_url = self.URL,
-                                    current_url = self.URLJOIN(attr_in_link),
-                                    method = method,
-                                    history_len = len(Response.history),
-                                    body = b64encode(Response.text.encode()).decode(),
-                                )
                                 # 하위 url 파싱을 위해 재귀 함수로 반복적인 호출
                                 self.GETLinks(URL = attr_in_link, method = method)
 

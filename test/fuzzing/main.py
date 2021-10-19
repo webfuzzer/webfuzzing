@@ -1,3 +1,3 @@
 from Crawler import URL
-Crawler = URL('https://me2nuk.com/')
-Crawler.Crawler()
+Crawling = URL('https://me2nuk.com/')
+Crawling.Crawler()
