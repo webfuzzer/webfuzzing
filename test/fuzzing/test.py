@@ -24,3 +24,34 @@ url = Table('me2nuk', Meta, autoload=True, autoload_with=engine)
 query = select([url.columns.current_url])
 execute = conn.execute(query)
 print(execute.fetchall())
+
+"""from sqlalchemy import create_engine, Table, Column, JSON, Integer
+from sqlalchemy.orm import sessionmaker as SessionMaker
+from sqlalchemy.ext.declarative import declarative_base
+
+engine = create_engine("sqlite:///test.db", echo = True)
+base = declarative_base()
+db = Table(
+    'test',
+    base.metadata,
+    Column('id', Integer, primary_key=True),
+    Column('jsons', JSON),
+)
+base.metadata.create_all(engine)
+a = SessionMaker(bind = engine)
+sess = a()
+
+class test(base):
+    __table__ = db
+
+    def __repr__(self) -> str:
+        return f"<(jsons:{self.jsons})>"
+
+group = test(jsons = {'test':'helloworld'})
+sess.add(group)
+sess.commit()
+
+dicts = sess.query(test).all()
+print(dicts)
+for i in dicts:
+    print(i.jsons['test'])"""

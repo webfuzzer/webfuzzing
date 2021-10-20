@@ -5,6 +5,7 @@ from base64 import b64encode
 from Storage.DB import Engine
 from bs4 import BeautifulSoup
 import tldextract
+import pickle
 
 class URL:
     def __init__(self, URL, Site = False, **info) -> None:
@@ -63,7 +64,7 @@ class URL:
         URINFO = urlparse(URL)
         URJOIN = self.URLJOIN(URL)
 
-        print(URJOIN)
+        # print(URJOIN)
 
         if URL:
             """
@@ -85,7 +86,12 @@ class URL:
                     first_url = self.URL,
                     current_url = self.URLJOIN(URJOIN),
                     method = method,
+                    history = b64encode(pickle.dumps(Response.history)).decode(),
                     history_len = len(Response.history),
+                    response_url = Response.url,
+                    response_cookies = Response.cookies.get_dict(),
+                    response_headers = dict(Response.headers),
+                    response_status = Response.status_code,
                     body = b64encode(Response.content.decode("utf-8", "replace").encode()).decode(),
                 )
                 """"

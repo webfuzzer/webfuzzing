@@ -1,4 +1,4 @@
-from sqlalchemy import create_engine, Table, Column, Integer, String
+from sqlalchemy import create_engine, Table, Column, Integer, String, JSON
 from sqlalchemy.orm import sessionmaker as SessionMaker
 from .model.URL import CreateModel, base
 
@@ -7,16 +7,10 @@ class Engine():
         self.init_db()
         self.init_sess()
 
-    def add(self, first_url, current_url, method, history_len, body):
-
+    def add(self, **data):
         INFO = self.URLGroup(
-                first_url = first_url,
-                current_url = current_url,
-                method = method,
-                history_len = history_len,
-                body = body,
+                **data
         )
-
         self.sess.add(INFO)
         self.sess.commit()
 
@@ -32,14 +26,19 @@ class Engine():
             Column('first_url', String),
             Column('current_url', String),
             Column('method', String(5)),
+            Column('history', String),
             Column('history_len', Integer),
+            Column('response_url', String),
+            Column('response_cookies', JSON),
+            Column('response_headers', JSON),
+            Column('response_status', String),
             Column('body', String),
         )
         base.metadata.create_all(self.engine)
         self.URLGroup = CreateModel(self.Table)
 
     def init_db(self):
-        self.engine = create_engine('sqlite:///db/url.db')
+        self.engine = create_engine('sqlite:///db/url.db', echo=True)
     
     def init_sess(self):
         self._sess = SessionMaker(bind=self.engine)
