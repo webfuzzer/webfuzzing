@@ -79,7 +79,7 @@ class URL:
                     # 만약 mail:me2nuk.com 같이 잘못된 schema으로 요청 할 경우 try except 으로 예외 처리하여 return None
                     return
                 # 중복 체크를 위해 쿼리가 존재할 경우 값만 제거되는 URL 저장
-                self.CurrentURLCheck.add(self.qs_value_empty(URJOIN))
+                self.CurrentURLCheck.add(URJOIN)
                 # Storage.DB.Engine을 이용하여 sqlite db에 url 정보 저장
                 self.engine.add(
                     first_url = self.URL,
