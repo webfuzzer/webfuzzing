@@ -14,7 +14,7 @@
 # for i in db.fetch():
 #     print(i.first_url, i.current_url, b64decode(i.body).decode())
 
-from sqlalchemy import create_engine, Table, select, MetaData
+"""from sqlalchemy import create_engine, Table, select, MetaData
 from base64 import b64decode
 
 engine = create_engine('sqlite:///db/url.db', echo=True)
@@ -23,7 +23,7 @@ Meta = MetaData()
 url = Table('me2nuk', Meta, autoload=True, autoload_with=engine)
 query = select([url.columns.current_url])
 execute = conn.execute(query)
-print(execute.fetchall())
+print(execute.fetchall())"""
 
 """from sqlalchemy import create_engine, Table, Column, JSON, Integer
 from sqlalchemy.orm import sessionmaker as SessionMaker

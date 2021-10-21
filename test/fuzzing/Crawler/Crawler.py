@@ -152,12 +152,6 @@ class URL:
         # 쿼리가 존재하지 않는 경우 URL 반환
         return URL
 
-    def empty_url(self, URL):
-        # URL이 존재하는지 체크 and 해당 URL이 Crawling domain과 일치하는지 체크
-        if URL and self.FirstURLParse.netloc == urlparse(URL).netloc:
-            return self.qs_value_empty(URL)
-        return
-
     def init_engine(self) -> None:
         # sqlite에 데이터 저장을 위해 Engine Class 생성
         self.engine = Engine()

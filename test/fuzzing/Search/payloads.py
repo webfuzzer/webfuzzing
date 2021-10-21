@@ -2,8 +2,11 @@
 기본적인 공격 벡터 : header, cookie, post data, get data, s
 """
 from urllib.parse import parse_qs, urlparse, urljoin
+from string import ascii_letters, digits
 from bs4 import BeautifulSoup
 from Crawler import sessions
+from Storage import Engine
+from random import choice
 
 __all__ = [
     'ReflectedXSS',
@@ -20,6 +23,12 @@ __all__ = [
 def init_session():
     return sessions()(Site=False)
 
+def init_engine():
+    return Engine()
+
+def RandomString(strlen, digit=True):
+    return ''.join([choice(ascii_letters + (digits if digit else '')) for _ in range(0,strlen)])
+
 class OpenRedirect:
     def __init__(self, URL, **info) -> None:
         pass
@@ -32,16 +41,13 @@ class ReflectedXSS:
         self.URL = URL
         self.info = info
         self.sess = init_session()
+        self.engine = init_engine()
 
     def try_html_element_events_check(self) -> None:
         pass
 
     def search_html_element(self) -> None:
-        """
-        - Header에 있는 값이 Response body에 출력 되는 경우
-            - Cookie에 있는 값이 Response body에 출력 되는 경우
-        - query에 있는 값이 Response body에 출력 되는 경우
-        """
+        pass
 
     def input_value_check(self) -> None:
         pass
