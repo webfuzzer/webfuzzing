@@ -21,9 +21,11 @@ engine = create_engine('sqlite:///db/url.db', echo=True)
 conn = engine.connect()
 Meta = MetaData()
 url = Table('me2nuk', Meta, autoload=True, autoload_with=engine)
-query = select([url.columns.current_url])
+test = [url.columns.current_url]
+print(test)
+query = select(test)
 execute = conn.execute(query)
-print(execute.fetchall())"""
+# print(execute.fetchall())"""
 
 """from sqlalchemy import create_engine, Table, Column, JSON, Integer
 from sqlalchemy.orm import sessionmaker as SessionMaker
@@ -55,3 +57,9 @@ dicts = sess.query(test).all()
 print(dicts)
 for i in dicts:
     print(i.jsons['test'])"""
+"""from sqlalchemy.sql.expression import column
+from Storage.DB import Engine
+
+engine = Engine(sess = False)
+engine.init_conn()
+print(engine.sqlite_engine_auto_load_select(tabname = 'me2nuk', column=['current_url']))"""

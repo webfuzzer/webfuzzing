@@ -1,11 +1,12 @@
-from sqlalchemy import create_engine, Table, Column, Integer, String, JSON
+from sqlalchemy import create_engine, Table, Column, Integer, String, JSON, select
 from sqlalchemy.orm import sessionmaker as SessionMaker
 from .model.URL import CreateModel, base
 
 class Engine():
-    def __init__(self) -> None:
+    def __init__(self, sess=True) -> None:
         self.init_db()
-        self.init_sess()
+        if sess:
+            self.init_sess()
 
     def add(self, **data):
         INFO = self.URLGroup(
@@ -44,8 +45,24 @@ class Engine():
         self._sess = SessionMaker(bind=self.engine)
         self.sess = self._sess()
 
-    def __del__(self):
-        self._sess.close_all()
+    def init_conn(self):
+        self.conn = self.engine.connect()
+
+    def sqlite_engine_auto_load_select(self, tabname, column='*'):
+
+        URLGroup = Table(tabname, base.metadata, autoload=True, autoload_with=self.engine)
+
+        if column == '*':
+            columns = [URLGroup]
+        else:
+            try:
+                columns = [getattr(URLGroup.columns, select_column) for select_column in column]
+                print(columns)
+            except AttributeError:
+                return
+        sqlite_select_query = select(columns)
+        result = self.conn.execute(sqlite_select_query)
+        return result.fetchall()
 
 """
 engine = Engine()
