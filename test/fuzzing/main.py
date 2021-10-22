@@ -1,5 +1,7 @@
+from Search.vuln import Vulndb
 from Crawler import URL
 
 if __name__ == "__main__":
-    Crawling = URL('https://me2nuk.com/')
-    Crawling.Crawler()
+    Vulndb('me2nuk')
+    # Crawling = URL('https://me2nuk.com/')
+    # Crawling.Crawler()

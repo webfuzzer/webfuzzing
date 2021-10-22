@@ -45,24 +45,27 @@ class Engine():
         self._sess = SessionMaker(bind=self.engine)
         self.sess = self._sess()
 
-    def init_conn(self):
+    def init_conn(self, tabname):
         self.conn = self.engine.connect()
+        self.URLGroup = Table(tabname, base.metadata, autoload=True, autoload_with=self.engine)
 
-    def sqlite_engine_auto_load_select(self, tabname, column='*'):
-
-        URLGroup = Table(tabname, base.metadata, autoload=True, autoload_with=self.engine)
+    def sqlite_engine_auto_load_select(self, column='*'):
 
         if column == '*':
-            columns = [URLGroup]
+            columns = [self.URLGroup]
         else:
             try:
-                columns = [getattr(URLGroup.columns, select_column) for select_column in column]
+                columns = [getattr(self.URLGroup.columns, select_column) for select_column in column]
                 print(columns)
             except AttributeError:
                 return
         sqlite_select_query = select(columns)
         result = self.conn.execute(sqlite_select_query)
         return result.fetchall()
+
+
+    def __del__(self):
+        self._sess.close_all()
 
 """
 engine = Engine()

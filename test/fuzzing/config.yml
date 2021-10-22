@@ -1,0 +1,11 @@
+debug: true
+
+discord:
+  token: token
+  channel: fuzzing
+
+static:
+  - http://localhost
+
+dynamic:
+  - http://localhost/

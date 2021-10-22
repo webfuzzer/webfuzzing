@@ -57,9 +57,14 @@ dicts = sess.query(test).all()
 print(dicts)
 for i in dicts:
     print(i.jsons['test'])"""
-"""from sqlalchemy.sql.expression import column
+"""
 from Storage.DB import Engine
 
 engine = Engine(sess = False)
 engine.init_conn()
 print(engine.sqlite_engine_auto_load_select(tabname = 'me2nuk', column=['current_url']))"""
+from Storage.DB import Engine
+
+engine = Engine(sess = False)
+engine.init_conn()
+print(engine.sqlite_engine_auto_load_select(tabname='me2nuk', column=['history']))

@@ -1,11 +1,11 @@
 """
-기본적인 공격 벡터 : header, cookie, post data, get data, s
+기본적인 공격 벡터 : header, cookie, post data, get data
 """
 from urllib.parse import parse_qs, urlparse, urljoin
 from string import ascii_letters, digits
 from bs4 import BeautifulSoup
+from Storage.DB import Engine
 from Crawler import sessions
-from Storage import Engine
 from random import choice
 
 __all__ = [
@@ -20,55 +20,41 @@ __all__ = [
     'RemoteFileInclusion'
 ]
 
+class init:
+    def __init__(self, crawling_contents, URL, **info):
+        self.crawling_contents = crawling_contents
+        self.info = info
+        self.URL = URL
+
 def init_session():
     return sessions()(Site=False)
-
-def init_engine():
-    return Engine()
 
 def RandomString(strlen, digit=True):
     return ''.join([choice(ascii_letters + (digits if digit else '')) for _ in range(0,strlen)])
 
-class OpenRedirect:
-    def __init__(self, URL, **info) -> None:
-        pass
-
-    def request_history_check(self) -> None:
-        pass
-
-class ReflectedXSS:
-    def __init__(self, URL, **info) -> None:
-        self.URL = URL
-        self.info = info
-        self.sess = init_session()
-        self.engine = init_engine()
-
-    def try_html_element_events_check(self) -> None:
-        pass
-
-    def search_html_element(self) -> None:
-        pass
-
-    def input_value_check(self) -> None:
-        pass
-
-class SQLInjection:
+class OpenRedirect(init):
     pass
 
-class CrossSiteRequestForgery:
+class ReflectedXSS(init):
     pass
 
-class NOSQLInjection:
+class SQLInjection(init):
     pass
 
-class OSCommandInjection:
+class CrossSiteRequestForgery(init):
     pass
 
-class ServerSideTemplateInjection:
+class NOSQLInjection(init):
     pass
 
-class LocalFileInclusion:
+class OSCommandInjection(init):
     pass
 
-class RemoteFileInclusion:
+class ServerSideTemplateInjection(init):
+    pass
+
+class LocalFileInclusion(init):
+    pass
+
+class RemoteFileInclusion(init):
     pass
