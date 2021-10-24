@@ -27,7 +27,7 @@ query = select(test)
 execute = conn.execute(query)
 # print(execute.fetchall())"""
 
-"""from sqlalchemy import create_engine, Table, Column, JSON, Integer
+from sqlalchemy import create_engine, Table, Column, JSON, Integer
 from sqlalchemy.orm import sessionmaker as SessionMaker
 from sqlalchemy.ext.declarative import declarative_base
 
@@ -54,17 +54,26 @@ sess.add(group)
 sess.commit()
 
 dicts = sess.query(test).all()
-print(dicts)
 for i in dicts:
-    print(i.jsons['test'])"""
+    print(i.__dict__)
 """
 from Storage.DB import Engine
 
 engine = Engine(sess = False)
 engine.init_conn()
 print(engine.sqlite_engine_auto_load_select(tabname = 'me2nuk', column=['current_url']))"""
-from Storage.DB import Engine
+"""from Storage.DB import Engine
 
 engine = Engine(sess = False)
 engine.init_conn()
-print(engine.sqlite_engine_auto_load_select(tabname='me2nuk', column=['history']))
+print(engine.sqlite_engine_auto_load_select(tabname='me2nuk', column=['history']))"""
+"""class a:
+    def __init__(self):
+        self.a = 'hello'
+
+class exam(a):
+    def __new__(self):
+        return self.a
+
+b = exam()
+print(b)"""

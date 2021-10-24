@@ -33,13 +33,15 @@ class Engine():
             Column('response_cookies', JSON),
             Column('response_headers', JSON),
             Column('response_status', String),
+            Column('request_cookies', JSON),
+            Column('request_headers', JSON),
             Column('body', String),
         )
         base.metadata.create_all(self.engine)
         self.URLGroup = CreateModel(self.Table)
 
     def init_db(self):
-        self.engine = create_engine('sqlite:///db/url.db', echo=True)
+        self.engine = create_engine('sqlite:///db/url.db') # echo=True)
     
     def init_sess(self):
         self._sess = SessionMaker(bind=self.engine)
@@ -56,12 +58,12 @@ class Engine():
         else:
             try:
                 columns = [getattr(self.URLGroup.columns, select_column) for select_column in column]
-                print(columns)
             except AttributeError:
                 return
         sqlite_select_query = select(columns)
         result = self.conn.execute(sqlite_select_query)
-        return result.fetchall()
+        a = result.fetchall()
+        return a
 
 
     def __del__(self):

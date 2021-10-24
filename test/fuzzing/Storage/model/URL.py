@@ -28,6 +28,10 @@ def CreateModel(table):
             }', '{
                 self.response_status
             }', '{
+                self.request_cookies
+            }', '{
+                self.request_headers
+            }', '{
                 self.body
             })>"""
 

@@ -81,6 +81,7 @@ class URL:
                     return
                 # 중복 체크를 위해 쿼리가 존재할 경우 값만 제거되는 URL 저장
                 self.CurrentURLCheck.add(URJOIN)
+                # print(self.CurrentURLCheck)
                 # Storage.DB.Engine을 이용하여 sqlite db에 url 정보 저장
                 self.engine.add(
                     first_url = self.URL,
@@ -92,6 +93,8 @@ class URL:
                     response_cookies = Response.cookies.get_dict(),
                     response_headers = dict(Response.headers),
                     response_status = Response.status_code,
+                    request_cookies = Response.request._cookies.get_dict(),
+                    request_headers = dict(Response.request.headers),
                     body = b64encode(Response.content.decode("utf-8", "replace").encode()).decode(),
                 )
                 """"
@@ -125,12 +128,11 @@ class URL:
                         # 만약 해당 태그에 파싱 할 속성이 있는 경우
                         if attribute in element.attrs:
                             # 해당 속성 안에 있는 URL 가져오기
-                            attr_in_link = element.get(attribute)
-                            # attr_in_link 변수에 있는 URL에 쿼리가 있는 경우 값만 제거
-                            qs_value_empty_attr_in_link = self.qs_value_empty(attr_in_link)
+                            attr_in_link = self.URLJOIN(element.get(attribute))
                             # 가져온 URL을 이미 가져왔는지 and 해당 URL이 Crawling URL과 같은 domain인지 체크
-                            if qs_value_empty_attr_in_link not in self.CurrentURLCheck and urlparse(self.URLJOIN(attr_in_link)).netloc == self.FirstURLParse.netloc:
+                            if (attr_in_link not in self.CurrentURLCheck) and urlparse(attr_in_link).netloc == self.FirstURLParse.netloc:
                                 # 하위 url 파싱을 위해 재귀 함수로 반복적인 호출
+                                # print(attr_in_link)
                                 self.GETLinks(URL = attr_in_link, method = method)
 
     def qs_value_empty(self, URL) -> str:
