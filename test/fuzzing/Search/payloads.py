@@ -63,57 +63,37 @@ class ReflectedXSS:
             self.search_text(content[attr['request_headers']], content[attr['request_cookies']])
  
     def search_text(self, headers, cookies):
-        # query string
-        urinfo = urlparse(self.current_url)
-        if urinfo.query:
-            qs = parse_qs(urinfo.query)
-            for key, value in qs.items():
-                if type(value) == list:
-                    value = value[0]
-                tmp = BeautifulSoup(self.html, 'html.parser')
-                if tmp.find_all(text=value):
-                    randstr = RandomString(5)
-                    qs[key] = randstr
-                    r = self.sess.get(urinfo._replace(query=urlencode(qs, doseq=True)).geturl())  
-                    if randstr in r.text:
-                        soup = BeautifulSoup(r.text, 'html.parser')
-                        # inner text
-                        if soup.find_all(text=randstr):
-                            self.payloads_check('qs', key,qs)
-                            break
-        # cookies`
+        self.urinfo = urlparse(self.current_url)
+        if self.urinfo.query:
+            self.InputValueCheck(parse_qs(self.urinfo.query), 'qs')
         if cookies:
-            for key, value in cookies.items():
-                tmp = BeautifulSoup(self.html, 'html.parser')
-                if tmp.find_all(text=value):
-                    randstr = RandomString(5)
-                    cookies[key] = randstr
-                    r = self.sess.get(self.current_url, cookies=cookies)  
-                    if randstr in r.text:
-                        soup = BeautifulSoup(r.text, 'html.parser')
-                        # inner text
-                        if soup.find_all(text=randstr):
-                            self.payloads_check('cookie', key,cookies)
-                            break
-        # headers
+            self.InputValueCheck(cookies, 'cookies')
         if headers:
-            for key, value in headers.items():
-                tmp = BeautifulSoup(self.html, 'html.parser')
-                if tmp.find_all(text=value):
-                    randstr = RandomString(5)
-                    headers[key] = randstr
-                    r = self.sess.get(self.current_url, headers=headers)
-                    if randstr in r.text:
-                        soup = BeautifulSoup(r.text, 'html.parser')
-                        # inner text
-                        if soup.find_all(text=randstr):
-                            self.payloads_check('header', key,headers)
-                            break
+            self.InputValueCheck(headers, 'headers')
+
+    def InputValueCheck(self, _input, space):
+        for key, value in _input.items():
+            temp = _input
+            soup = BeautifulSoup(self.html, 'html.parser')
+            if soup.find_all(text=value):
+                randstr = RandomString(5)
+                temp[key] = randstr
+                if space == 'qs':
+                    r = self.sess.get(self.urinfo._replace(query=urlencode(temp, doseq=True)).geturl())
+                else:
+                    r = self.sess.get(self.current_url, **{space:_input})
+                if randstr in r.text:
+                    soup = BeautifulSoup(r.text, 'html.parser')
+                    # inner text
+                    if soup.find_all(text=randstr):
+                        self.payloads_check(space, key,_input)
+                        break
 
     def payloads_check(self, vector, key, _input = {''}):
         # vector : query string, cookies, headers
         print(self.current_url)
         print(f'{vector} : 취약점 찾은 것 같음')
+        print(f'info : {_input}')
 
 
 class SQLInjection:
