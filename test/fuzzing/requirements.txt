@@ -1,6 +1,0 @@
-tldextract
-sqlalchemy
-requests
-selenium
-pyyaml
-bs4
