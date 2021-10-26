@@ -32,6 +32,8 @@ def CreateModel(table):
             }', '{
                 self.request_headers
             }', '{
+                self.data 
+            }', '{
                 self.body
             })>"""
 

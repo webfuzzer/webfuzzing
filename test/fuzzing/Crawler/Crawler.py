@@ -1,6 +1,8 @@
+from typing import ParamSpec
 from urllib.parse import parse_qs, unquote, urlparse, urljoin, urlencode
 from requests.exceptions import InvalidSchema
 from Crawler.sessions import sessions
+from Utils.utils import RandomString
 from base64 import b64encode
 from Storage.DB import Engine
 from bs4 import BeautifulSoup
@@ -56,7 +58,7 @@ class URL:
         self.GETLinks(urljoin(self.URL, '/'))
         return True
 
-    def GETLinks(self, URL, method = 'GET'):
+    def GETLinks(self, URL, method = 'GET', data={}):
         """GETLinks 함수를 이용하여 최상위 경로부터 다양한 모든 URL을 파싱할 수 있습니다.
         해당 함수의 경우 다양한 필터링을 거쳐 self.tags에 있는 attrs들을 가지고 파싱하며 파싱한 URL, method, history length 등 다양한 정보를 Storage.DB.Engine를 통하여 /db/url.db에 정보를 저장 합니다.
         """
@@ -75,7 +77,13 @@ class URL:
                 try:
                     # self.sess.request => requests.Session().request
                     # 해당 URL에 요청
-                    Response = self.sess.request(method, URJOIN, **self.info)
+                    if data:
+                        if method == 'GET':
+                            Response = self.sess.request(method, URJOIN, params=data, **self.info)
+                        else:
+                            Response = self.sess.request(method, URJOIN, data=data, **self.info)
+                    else:
+                        Response = self.sess.request(method, URJOIN, **self.info)
                 except InvalidSchema:
                     # 만약 mail:me2nuk.com 같이 잘못된 schema으로 요청 할 경우 try except 으로 예외 처리하여 return None
                     return
@@ -95,6 +103,7 @@ class URL:
                     response_status = Response.status_code,
                     request_cookies = Response.request._cookies.get_dict(),
                     request_headers = dict(Response.request.headers),
+                    data = data,
                     body = b64encode(Response.content.decode("utf-8", "replace").encode()).decode(),
                 )
                 """"
@@ -116,10 +125,22 @@ class URL:
                     # form 태그의 action attr 가져오기
                     form_action = form.get('action')
                     # URL을 조합 한 뒤 method도 맞춰서 재귀 함수 작동
+                    form_in_elements_data = {}
+
+                    form_submit_elements = form.find_all(name=['button', 'input', 'select', 'textarea'])
+                    for SubmitElement in form_submit_elements:
+                        # if SubmitElement.name == "select":
+                        #     SubmitElement.find_all("option")
+                        value = SubmitElement.attrs.get('value')
+                        form_in_elements_data.setdefault(SubmitElement.attrs.get('name'), (value if value else RandomString(15)))
+
+
+
                     self.GETLinks(
                         URL = urljoin(self.CurrentURL,form_action),
                         # 잘못된 method가 들어 있는 경우를 대비하여 ['GET','PUT','POST','HEAD'] 메서드만 허용 ( 만약 다른 메서드도 넣어야 될 경우 추가 예정 )
                         method = (form_method if form_method in ['GET','PUT','POST','HEAD'] else 'GET'),
+                        data = form_in_elements_data,
                     )
                 # self.tags => 파싱하기 위한 태그들과 속성 dict
                 for attribute, tag in self.tags.items():

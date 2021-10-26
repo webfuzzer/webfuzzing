@@ -1,13 +1,11 @@
 """
 기본적인 공격 벡터 : header, cookie, post data, get data
 """
-from urllib.parse import parse_qs, urlencode, urlparse, urljoin
-from string import ascii_letters, digits
+from urllib.parse import ParseResultBytes, parse_qs, urlencode, urlparse, urljoin
+from Utils.utils import RandomString
 from bs4 import BeautifulSoup
-from Storage.DB import Engine
 from base64 import b64decode
 from Crawler import sessions
-from random import choice
 
 __all__ = [
     'ReflectedXSS',
@@ -33,14 +31,12 @@ attr = {
     'response_status':9,
     'request_cookies':10,
     'request_headers':11,
-    'body':12
+    'data':12,
+    'body':13
 }
 
 def init_session():
     return sessions()(Site=False)
-
-def RandomString(strlen, digit=True):
-    return ''.join([choice(ascii_letters + (digits if digit else '')) for _ in range(0,strlen)])
 
 class OpenRedirect:
     def __init__(self, crawling_contents, URL, **info):
@@ -63,6 +59,15 @@ class ReflectedXSS:
             self.search_text(content[attr['request_headers']], content[attr['request_cookies']])
  
     def search_text(self, headers, cookies):
+        """
+        if urlparse(self.current_url).query:
+            쿼리가 있는 경우 체크
+            self.InputValueCheck(parse_qs(urlparse(self.current_url).query), 'qs')
+        if cookies:
+            self.InputValueCheck(cookies, 'cookies')
+        if haders:
+            self.InputValueCheck(headers, 'headers')
+        """
         self.urinfo = urlparse(self.current_url)
         if self.urinfo.query:
             self.InputValueCheck(parse_qs(self.urinfo.query), 'qs')
@@ -72,6 +77,9 @@ class ReflectedXSS:
             self.InputValueCheck(headers, 'headers')
 
     def InputValueCheck(self, _input, space):
+        """
+        먼저 해당 페이지에 출력이 되어 있는지 체크 한 다음 RandomString(5)를 이용하여 랜덤 값 체크
+        """
         for key, value in _input.items():
             temp = _input
             soup = BeautifulSoup(self.html, 'html.parser')
@@ -89,11 +97,21 @@ class ReflectedXSS:
                         self.payloads_check(space, key,_input)
                         break
 
-    def payloads_check(self, vector, key, _input = {''}):
+    def payloads_check(self, 
+                        vector, # qs(query string), cookies, headers
+                        key, # 페이로드 주입 할 dict key
+                        _input = {''} # 페이로드 dict
+    ):
+        # if vector == "qs":
+        #     pass
+        # elif vector == "cookies":
+        #     pass
+        # elif vector == "headers":
+        #     pass
         # vector : query string, cookies, headers
-        print(self.current_url)
-        print(f'{vector} : 취약점 찾은 것 같음')
-        print(f'info : {_input}')
+        print("\033[90m","="*50,"\033[0m")
+        print(f'\033[31m[{urlparse(self.current_url).path}] : {vector} attack vector discover\033[0m')
+        print(f'\033[32m{_input}\033[0m')
 
 
 class SQLInjection:

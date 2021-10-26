@@ -35,6 +35,7 @@ class Engine():
             Column('response_status', String),
             Column('request_cookies', JSON),
             Column('request_headers', JSON),
+            Column('data', JSON),
             Column('body', String),
         )
         base.metadata.create_all(self.engine)

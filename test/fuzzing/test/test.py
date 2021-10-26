@@ -27,7 +27,7 @@ query = select(test)
 execute = conn.execute(query)
 # print(execute.fetchall())"""
 
-from sqlalchemy import create_engine, Table, Column, JSON, Integer
+"""from sqlalchemy import create_engine, Table, Column, JSON, Integer
 from sqlalchemy.orm import sessionmaker as SessionMaker
 from sqlalchemy.ext.declarative import declarative_base
 
@@ -55,7 +55,7 @@ sess.commit()
 
 dicts = sess.query(test).all()
 for i in dicts:
-    print(i.__dict__)
+    print(i.__dict__)"""
 """
 from Storage.DB import Engine
 
@@ -77,3 +77,24 @@ class exam(a):
 
 b = exam()
 print(b)"""
+
+from re import L
+from bs4 import BeautifulSoup
+
+soup = BeautifulSoup('''<html>
+<head>
+</head>
+<body>
+<form method="POST">
+<input name="name" type="text"/>
+<input name="passsword" type="text"/>
+<textarea name="contents">teasgdag</textarea>
+</form></body>
+</html>''', 'html.parser')
+form_in_elements_data = {}
+form_submit_elements = soup.find_all(name=['button', 'input', 'select', 'textarea'])
+for SubmitElement in form_submit_elements:
+    value = SubmitElement.attrs.get('value')
+    form_in_elements_data.setdefault(SubmitElement.attrs.get('name'), (value if value else ''))
+
+print(form_in_elements_data)
