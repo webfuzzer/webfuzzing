@@ -44,15 +44,38 @@ class fuzzer_payloads:
 
         # xss bypass
         closed = [
-            
+            '',
+            '"',
+            '\'',
+            ';',
+            '";',
+            '\';',
+            '>',
+            '\'>',
+            '">',
+            '</>',
         ]
         # find_all(name=[for i in element_xss])
         element_xss= [
-
+            '<h1{0}>{1}</h1>',
+            '<fuzzing{0}>{1}</fuzzing>',
+            '<a{0}>{1}</a>',
         ]
         # Response history
         script_xss = [
-            ''
+            "{0}",
+            "';//{0}",
+            "\";//{0}",
+            ";//{0}",
+            ");//{0}",
+            "));//{0}",
+            ")));//{0}",
+            "');//{0}",
+            "'));//{0}",
+            "')));//{0}",
+            "\");//{0}",
+            "\"));//{0}",
+            "\")));//{0}"
         ]
 
         # find_all(attrs={'event name':'alert(1)'})
@@ -206,7 +229,7 @@ class fuzzer_payloads:
         ontoggle	        script	Fires when the user opens or closes the <details> element
         """
 
-        return
+        return attribute_xss, script_xss
 
 class OpenRedirect:
     def __init__(self, crawling_contents, URL, **info):
@@ -283,22 +306,10 @@ class ReflectedXSS:
                 self.payloads_check(method,space, key,_input)
 
     def payloads_check(self, method, space, key, _input = {''}):
-        # html_pay, attr_pay = fuzzer_payloads.xss()
-        # html_injection_check = attribute_injection_check = 0
-        # for pay in html_pay:
-        #     _input[key] = pay[0]
-
-        #     if method == 'POST':
-        #         r = self.sess.request(method, self.current_url, **{space:_input},**self.info)
-        #     else:
-        #         r = self.sess.request(method, self.urinfo._replace(query=urlencode(_input, doseq=True)).geturl(), **{space:_input},**self.info)
-        #     soup = BeautifulSoup(r.text, 'html.parser')
-
-        #     if soup.find_all(**pay[1]):
-        #          break
-        print("\033[90m","="*50,"\033[0m")
-        print(f'\033[31m[{urlparse(self.current_url).path}] : {space} attack vector discover\033[0m')
-        print(f'\033[32m{_input}\033[0m')
+        pass
+        # print("\033[90m","="*50,"\033[0m")
+        # print(f'\033[31m[{urlparse(self.current_url).path}] : {space} attack vector discover\033[0m')
+        # print(f'\033[32m{_input}\033[0m')
 
 
         # vector : query string, cookies, headers
