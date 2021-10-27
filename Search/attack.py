@@ -1,8 +1,8 @@
 from tldextract import extract
-from Search.payloads import *
 from Storage.DB import Engine
+from Search.Vulndb import *
 
-class Vulndb:
+class VulnFuzz:
     def __init__(self, tabname, URL, **info):
         engine = Engine()
         engine.init_conn(tabname)
