@@ -5,7 +5,6 @@ from timeit import default_timer as dt
 import os
 
 if __name__ == "__main__":
-    a = dt()
     if os.path.exists('.\\db\\url.db'):
         os.remove('.\\db\\url.db')
         print(f'[{os.getcwd()}\\db\\url.db] : remove')
