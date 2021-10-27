@@ -7,6 +7,7 @@ from Utils.utils import RandomString
 from bs4 import BeautifulSoup
 from base64 import b64decode
 from Crawler import sessions
+from copy import deepcopy
 
 __all__ = [
     'ReflectedXSS',
@@ -76,6 +77,7 @@ class ReflectedXSS:
         """
         self.urinfo = urlparse(self.current_url)
         if self.urinfo.query:
+            # print(self.current_url)
             self.InputValueCheck(method, parse_qs(self.urinfo.query), 'params')
         if data:
             self.InputValueCheck(method, data, 'data')
@@ -90,7 +92,10 @@ class ReflectedXSS:
         """
         for key, value in _input.items():
             soup = BeautifulSoup(self.html, 'html.parser')
-            if soup.find_all(text=value):
+            if type(value) == list:
+                value = value[0]
+            if soup.find_all(text=value) or (True in [value in j for i in soup.find_all() for j in i.attrs.values()]) or (soup.text.find(value) != -1):
+                # print(key, value, id(_input))
                 self.RequestRandomString(method, _input, key, space)
             else:
                 pass
@@ -99,24 +104,39 @@ class ReflectedXSS:
     def RequestRandomString(self, method, _input, key, space):
 
         randstr = RandomString(5)
-        _input[key] = randstr
-
+        temp = _input
+        temp[key] = randstr
+        # print(temp)
         if space == 'params':
-            r = self.sess.request(method, self.urinfo._replace(query=urlencode(_input, doseq=True)).geturl(), **self.info)
+            r = self.sess.request(method, self.urinfo._replace(query=urlencode(temp, doseq=True)).geturl(), **self.info)
+            # print(r.url)
         else:
-            r = self.sess.request(method, self.current_url, **{space:_input}, **self.info)
-
+            r = self.sess.request(method, self.current_url, **{space:temp}, **self.info)
         if randstr in r.text:
-
             soup = BeautifulSoup(r.text, 'html.parser')
-            if soup.find_all(text=randstr):
+            # print(True in [randstr in j for i in soup.find_all() for j in i.attrs.values()], self.current_url)
+            if soup.find_all(text=randstr) or(True in [randstr in j for i in soup.find_all() for j in i.attrs.values()]) or (soup.text.find(randstr) != -1):
 
-                self.payloads_check(method,space, key,_input)
+                self.payloads_check(method,space, key,temp)
 
     def payloads_check(self, method, space, key, _input = {''}):
         element_xss, attribute_xss, script_xss = fuzzer_payloads.xss()
         for element in element_xss:
-            r = self.sess.request(method, self.current_url)
+            temp = _input
+            attrs_key_rand = RandomString(5)
+            attrs_value_rand = RandomString(5)
+            inner_text_rand = RandomString(5)
+            temp[key] = element.format(f" {attrs_key_rand}={attrs_value_rand}", inner_text_rand)
+            if space == 'params':
+                r = self.sess.request(method, self.urinfo._replace(query=urlencode(temp, doseq=True)).geturl(), **self.info)
+            else:
+                r = self.sess.request(method, self.current_url, **{space:temp}, **self.info)
+            soup = BeautifulSoup(r.text, 'html.parser')
+            if soup.find(attrs={attrs_key_rand.lower():attrs_value_rand}, text=inner_text_rand) or (soup.find(attrs={attrs_key_rand.lower():attrs_value_rand}) and soup.string.find(inner_text_rand) if soup.string else False):
+                print("\033[90m","="*50,"\033[0m")
+                print(f'\033[31m[{urlparse(self.current_url).path}] : {space} attack vector discover\033[0m')
+                print(f'\033[32m{_input}\033[0m')
+                break
         for attr in attribute_xss:
             pass
         for script in script_xss:

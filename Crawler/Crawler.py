@@ -184,3 +184,6 @@ class URL:
     def init_engine(self) -> None:
         # sqlite에 데이터 저장을 위해 Engine Class 생성
         self.engine = Engine()
+
+    def closed(self) -> None:
+        self.engine._sess.close_all()
