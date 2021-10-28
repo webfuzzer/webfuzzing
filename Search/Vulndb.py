@@ -3,11 +3,10 @@
 """
 from urllib.parse import parse_qs, urlencode, urlparse, urljoin
 from Search.payloads import fuzzer_payloads
+from bs4 import BeautifulSoup, Comment
 from Utils.utils import RandomString
-from bs4 import BeautifulSoup
 from base64 import b64decode
 from Crawler import sessions
-from copy import deepcopy
 
 __all__ = [
     'ReflectedXSS',
@@ -97,8 +96,6 @@ class ReflectedXSS:
             if soup.find_all(text=value) or (True in [value in j for i in soup.find_all() for j in i.attrs.values()]) or (soup.text.find(value) != -1):
                 # print(key, value, id(_input))
                 self.RequestRandomString(method, _input, key, space)
-            else:
-                pass
                 # self.RequestRandomString(method, _input, key, space)
 
     def RequestRandomString(self, method, _input, key, space):
