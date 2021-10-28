@@ -67,101 +67,102 @@ class URL:
         print(URL)
 
         # print(URJOIN)
-
-        if URL:
-            """
-            해당 URL이 Crawling 대상 URL이 맞는지 urlparse를 이용하여 domain 부분 체크
-            urlparse("https://www.google.com/path/example/?test=test").netloc -> www.google.com
-            """
-            if urlparse(URJOIN).netloc == self.FirstURLParse.netloc:
-                try:
-                    # self.sess.request => requests.Session().request
-                    # 해당 URL에 요청
-                    if data:
-                        if method == 'POST':
-                            Response = self.sess.request(method, URJOIN, data=data, **self.info)
-                        else:
-                            Response = self.sess.request(method, URJOIN, params=data, **self.info)
-                    else:
-                        Response = self.sess.request(method, URJOIN, **self.info)
-                except InvalidSchema:
-                    # 만약 mail:me2nuk.com 같이 잘못된 schema으로 요청 할 경우 try except 으로 예외 처리하여 return None
-                    return
-                # 중복 체크를 위해 쿼리가 존재할 경우 값만 제거되는 URL 저장
-                self.CurrentURLCheck.add((URJOIN, method))
-                # print(self.CurrentURLCheck)
-                # Storage.DB.Engine을 이용하여 sqlite db에 url 정보 저장
-                self.engine.add(
-                    first_url = self.URL,
-                    current_url = self.URLJOIN(URJOIN),
-                    method = method,
-                    history = b64encode(pickle.dumps(Response.history)).decode(),
-                    history_len = len(Response.history),
-                    response_url = Response.url,
-                    response_cookies = Response.cookies.get_dict(),
-                    response_headers = dict(Response.headers),
-                    response_status = Response.status_code,
-                    request_cookies = Response.request._cookies.get_dict(),
-                    request_headers = dict(Response.request.headers),
-                    data = data,
-                    body = b64encode(Response.content.decode("utf-8", "replace").encode()).decode(),
-                )
-                """"
-                URL join을 위해 경로 체크
-                urlparse("https://www.google.com/path/example/").path -> /path/example/
+        try:
+            if URL:
                 """
-                URLParseCurrentURL = urlparse(self.CurrentURL)
-                if URINFO.path != URLParseCurrentURL.path:
-                    self.CurrentURL = URLParseCurrentURL._replace(path=URINFO.path).geturl()
+                해당 URL이 Crawling 대상 URL이 맞는지 urlparse를 이용하여 domain 부분 체크
+                urlparse("https://www.google.com/path/example/?test=test").netloc -> www.google.com
+                """
+                if urlparse(URJOIN).netloc == self.FirstURLParse.netloc:
+                    try:
+                        # self.sess.request => requests.Session().request
+                        # 해당 URL에 요청
+                        if data:
+                            if method == 'POST':
+                                Response = self.sess.request(method, URJOIN, data=data, **self.info)
+                            else:
+                                Response = self.sess.request(method, URJOIN, params=data, **self.info)
+                        else:
+                            Response = self.sess.request(method, URJOIN, **self.info)
+                    except InvalidSchema:
+                        # 만약 mail:me2nuk.com 같이 잘못된 schema으로 요청 할 경우 try except 으로 예외 처리하여 return None
+                        return
+                    # 중복 체크를 위해 쿼리가 존재할 경우 값만 제거되는 URL 저장
+                    self.CurrentURLCheck.add((URJOIN, method))
+                    # print(self.CurrentURLCheck)
+                    # Storage.DB.Engine을 이용하여 sqlite db에 url 정보 저장
+                    self.engine.add(
+                        first_url = self.URL,
+                        current_url = self.URLJOIN(URJOIN),
+                        method = method,
+                        history = b64encode(pickle.dumps(Response.history)).decode(),
+                        history_len = len(Response.history),
+                        response_url = Response.url,
+                        response_cookies = Response.cookies.get_dict(),
+                        response_headers = dict(Response.headers),
+                        response_status = Response.status_code,
+                        request_cookies = Response.request._cookies.get_dict(),
+                        request_headers = dict(Response.request.headers),
+                        data = data,
+                        body = b64encode(Response.content.decode("utf-8", "replace").encode()).decode(),
+                    )
+                    """"
+                    URL join을 위해 경로 체크
+                    urlparse("https://www.google.com/path/example/").path -> /path/example/
+                    """
+                    URLParseCurrentURL = urlparse(self.CurrentURL)
+                    if URINFO.path != URLParseCurrentURL.path:
+                        self.CurrentURL = URLParseCurrentURL._replace(path=URINFO.path).geturl()
 
-                # elemtns 파싱을 위해 bs4 모듈 사용
-                htmlparser = BeautifulSoup(Response.content.decode("utf-8", "replace").encode(), 'html.parser')
-                # form 태그 찾기
-                form = htmlparser.find("form")
-                # 만약 form 태그가 존재하는 경우 / htmlparser.find 의 경우 없는 태그를 가져올려 하는 경우 None 반환
-                if form:
-                    # form 태그의 action attr 가져오기
-                    form_action = form.get('action')
-                    form_method = form.get('method')
-                    if ((self.URLJOIN(form_action), form_method) not in self.CurrentURLCheck):
-                        # print(form, self.CurrentURL)
-                        # form 태그의 method attr 가져오기
-                        #print("current url : ",self.CurrentURL)
-                        #print(form_method)
-                        # URL을 조합 한 뒤 method도 맞춰서 재귀 함수 작동
-                        form_in_elements_data = {}
-                        """
-                        form 
-                        """
-                        form_submit_elements = form.find_all(name=['button', 'input', 'select', 'textarea'])
-                        for SubmitElement in form_submit_elements:
-                            # if SubmitElement.name == "select":
-                            #     SubmitElement.find_all("option")
-                            value = SubmitElement.attrs.get('value')
-                            form_in_elements_data.setdefault(SubmitElement.attrs.get('name'), (value if value else RandomString(15)))
+                    # elemtns 파싱을 위해 bs4 모듈 사용
+                    htmlparser = BeautifulSoup(Response.content.decode("utf-8", "replace").encode(), 'html.parser')
+                    # form 태그 찾기
+                    form = htmlparser.find("form")
+                    # 만약 form 태그가 존재하는 경우 / htmlparser.find 의 경우 없는 태그를 가져올려 하는 경우 None 반환
+                    if form:
+                        # form 태그의 action attr 가져오기
+                        form_action = form.get('action')
+                        form_method = form.get('method')
+                        if ((self.URLJOIN(form_action), form_method) not in self.CurrentURLCheck):
+                            # print(form, self.CurrentURL)
+                            # form 태그의 method attr 가져오기
+                            #print("current url : ",self.CurrentURL)
+                            #print(form_method)
+                            # URL을 조합 한 뒤 method도 맞춰서 재귀 함수 작동
+                            form_in_elements_data = {}
+                            """
+                            form 
+                            """
+                            form_submit_elements = form.find_all(name=['button', 'input', 'select', 'textarea'])
+                            for SubmitElement in form_submit_elements:
+                                # if SubmitElement.name == "select":
+                                #     SubmitElement.find_all("option")
+                                value = SubmitElement.attrs.get('value')
+                                form_in_elements_data.setdefault(SubmitElement.attrs.get('name'), (value if value else RandomString(15)))
 
 
 
-                        self.GETLinks(
-                            URL = urljoin(self.CurrentURL,form_action),
-                            # 잘못된 method가 들어 있는 경우를 대비하여 ['GET','PUT','POST','HEAD'] 메서드만 허용 ( 만약 다른 메서드도 넣어야 될 경우 추가 예정 )
-                            method = (form_method if form_method in ['GET','PUT','POST','HEAD'] else 'GET'),
-                            data = form_in_elements_data,
-                        )
-                # self.tags => 파싱하기 위한 태그들과 속성 dict
-                for attribute, tag in self.tags.items():
-                    # 파싱 할 모든 tag를 가져오기
-                    for element in htmlparser.find_all(tag):
-                        # 만약 해당 태그에 파싱 할 속성이 있는 경우
-                        if attribute in element.attrs:
-                            # 해당 속성 안에 있는 URL 가져오기
-                            attr_in_link = self.URLJOIN(element.get(attribute))
-                            # 가져온 URL을 이미 가져왔는지 and 해당 URL이 Crawling URL과 같은 domain인지 체크
-                            if ((attr_in_link,method, ) not in self.CurrentURLCheck) and urlparse(attr_in_link).netloc == self.FirstURLParse.netloc:
-                                # 하위 url 파싱을 위해 재귀 함수로 반복적인 호출
-                                # print(attr_in_link)
-                                self.GETLinks(URL = attr_in_link, method = method)
-
+                            self.GETLinks(
+                                URL = urljoin(self.CurrentURL,form_action),
+                                # 잘못된 method가 들어 있는 경우를 대비하여 ['GET','PUT','POST','HEAD'] 메서드만 허용 ( 만약 다른 메서드도 넣어야 될 경우 추가 예정 )
+                                method = (form_method if form_method in ['GET','PUT','POST','HEAD'] else 'GET'),
+                                data = form_in_elements_data,
+                            )
+                    # self.tags => 파싱하기 위한 태그들과 속성 dict
+                    for attribute, tag in self.tags.items():
+                        # 파싱 할 모든 tag를 가져오기
+                        for element in htmlparser.find_all(tag):
+                            # 만약 해당 태그에 파싱 할 속성이 있는 경우
+                            if attribute in element.attrs:
+                                # 해당 속성 안에 있는 URL 가져오기
+                                attr_in_link = self.URLJOIN(element.get(attribute))
+                                # 가져온 URL을 이미 가져왔는지 and 해당 URL이 Crawling URL과 같은 domain인지 체크
+                                if ((attr_in_link,method, ) not in self.CurrentURLCheck) and urlparse(attr_in_link).netloc == self.FirstURLParse.netloc:
+                                    # 하위 url 파싱을 위해 재귀 함수로 반복적인 호출
+                                    # print(attr_in_link)
+                                    self.GETLinks(URL = attr_in_link, method = method)
+        except:
+            pass
     def qs_value_empty(self, URL) -> str:
         URL = self.URLJOIN(URL)
         urinfo = urlparse(URL)

@@ -47,6 +47,7 @@ class OpenRedirect:
 
 class ReflectedXSS:
     def __init__(self, crawling_contents, URL, **info):
+        self.element_xss, self.attribute_xss, self.script_xss = fuzzer_payloads.xss()
         self.crawling_contents = crawling_contents
         self.sess = sessions().init_sess()
         self.info = info
@@ -117,8 +118,7 @@ class ReflectedXSS:
                 self.payloads_check(method,space, key,temp)
 
     def payloads_check(self, method, space, key, _input = {''}):
-        element_xss, attribute_xss, script_xss = fuzzer_payloads.xss()
-        for element in element_xss:
+        for element in self.element_xss:
             temp = _input
             attrs_key_rand = RandomString(5)
             attrs_value_rand = RandomString(5)
@@ -131,12 +131,13 @@ class ReflectedXSS:
             soup = BeautifulSoup(r.text, 'html.parser')
             if soup.find(attrs={attrs_key_rand.lower():attrs_value_rand}, text=inner_text_rand) or (soup.find(attrs={attrs_key_rand.lower():attrs_value_rand}) and soup.string.find(inner_text_rand) if soup.string else False):
                 print("\033[90m","="*50,"\033[0m")
+                print(self.urinfo._replace(query=urlencode(temp, doseq=True)).geturl())
                 print(f'\033[31m[{urlparse(self.current_url).path}] : {space} attack vector discover\033[0m')
                 print(f'\033[32m{_input}\033[0m')
                 break
-        for attr in attribute_xss:
+        for attr in self.attribute_xss:
             pass
-        for script in script_xss:
+        for script in self.script_xss:
             pass
         # print("\033[90m","="*50,"\033[0m")
         # print(f'\033[31m[{urlparse(self.current_url).path}] : {space} attack vector discover\033[0m')
