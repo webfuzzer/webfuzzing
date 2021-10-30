@@ -20,22 +20,6 @@ __all__ = [
     'RemoteFileInclusion'
 ]
 
-attr = {
-    'first_url':1,
-    'current_url':2,
-    'method':3,
-    'history':4,
-    'history_len':5,
-    'response_url':6,
-    'response_cookies':7,
-    'response_headers':8,
-    'response_status':9,
-    'request_cookies':10,
-    'request_headers':11,
-    'data':12,
-    'body':13
-}
-
 def init_session():
     return sessions()(Site=False)
 
@@ -46,26 +30,20 @@ class OpenRedirect:
         self.URL = URL
 
 class ReflectedXSS:
-    def __init__(self, crawling_contents, URL, **info):
+    def __init__(self, current_url, html, headers, cookies, data, method, **info):
         self.element_xss, self.attribute_xss, self.script_xss = fuzzer_payloads.xss()
-        self.crawling_contents = crawling_contents
+        self.current_url = current_url
         self.sess = sessions().init_sess()
         self.info = info
-        self.URL = URL
-        self.exploit()
-
-    def exploit(self):
-        for content in self.crawling_contents:
-            self.html = b64decode(content[attr['body']]).decode()
-            self.current_url = content[attr['current_url']]
-            self.search_text(
-                headers = content[attr['request_headers']], 
-                cookies = content[attr['request_cookies']], 
-                data = content[attr['data']],
-                method = content[attr['method']],
-            )
+        self.html = html
+        self.exploit(
+            headers = headers,
+            cookies = cookies,
+            data = data,
+            method = method,
+        )
  
-    def search_text(self, *, headers, cookies, data, method):
+    def exploit(self, *, headers, cookies, data, method):
         """
         if urlparse(self.current_url).query:
             쿼리가 있는 경우 체크
@@ -77,7 +55,6 @@ class ReflectedXSS:
         """
         self.urinfo = urlparse(self.current_url)
         if self.urinfo.query:
-            # print(self.current_url)
             self.InputValueCheck(method, parse_qs(self.urinfo.query), 'params')
         if data:
             self.InputValueCheck(method, data, 'data')
@@ -95,24 +72,19 @@ class ReflectedXSS:
             if type(value) == list:
                 value = value[0]
             if soup.find_all(text=value) or (True in [value in j for i in soup.find_all() for j in i.attrs.values()]) or (soup.text.find(value) != -1):
-                # print(key, value, id(_input))
                 self.RequestRandomString(method, _input, key, space)
-                # self.RequestRandomString(method, _input, key, space)
 
     def RequestRandomString(self, method, _input, key, space):
 
         randstr = RandomString(5)
         temp = _input
         temp[key] = randstr
-        # print(temp)
         if space == 'params':
             r = self.sess.request(method, self.urinfo._replace(query=urlencode(temp, doseq=True)).geturl(), **self.info)
-            # print(r.url)
         else:
             r = self.sess.request(method, self.current_url, **{space:temp}, **self.info)
         if randstr in r.text:
             soup = BeautifulSoup(r.text, 'html.parser')
-            # print(True in [randstr in j for i in soup.find_all() for j in i.attrs.values()], self.current_url)
             if soup.find_all(text=randstr) or(True in [randstr in j for i in soup.find_all() for j in i.attrs.values()]) or (soup.text.find(randstr) != -1):
 
                 self.payloads_check(method,space, key,temp)
@@ -129,7 +101,7 @@ class ReflectedXSS:
             else:
                 r = self.sess.request(method, self.current_url, **{space:temp}, **self.info)
             soup = BeautifulSoup(r.text, 'html.parser')
-            if soup.find(attrs={attrs_key_rand.lower():attrs_value_rand}, text=inner_text_rand) or (soup.find(attrs={attrs_key_rand.lower():attrs_value_rand}) and soup.string.find(inner_text_rand) if soup.string else False):
+            if soup.find(attrs={attrs_key_rand.lower():attrs_value_rand}, text=inner_text_rand) or soup.find(attrs={attrs_key_rand.lower():attrs_value_rand}):
                 print("\033[90m","="*50,"\033[0m")
                 print(self.urinfo._replace(query=urlencode(temp, doseq=True)).geturl())
                 print(f'\033[31m[{urlparse(self.current_url).path}] : {space} attack vector discover\033[0m')

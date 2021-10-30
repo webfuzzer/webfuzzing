@@ -89,6 +89,7 @@ class URL:
                         return
                     # 중복 체크를 위해 쿼리가 존재할 경우 값만 제거되는 URL 저장
                     self.CurrentURLCheck.add((URJOIN, method))
+                    html = Response.content.decode("utf-8", "replace").encode()
                     # print(self.CurrentURLCheck)
                     # Storage.DB.Engine을 이용하여 sqlite db에 url 정보 저장
                     self.engine.add(
@@ -104,7 +105,7 @@ class URL:
                         request_cookies = Response.request._cookies.get_dict(),
                         request_headers = dict(Response.request.headers),
                         data = data,
-                        body = b64encode(Response.content.decode("utf-8", "replace").encode()).decode(),
+                        body = b64encode(html.encode()).decode(),
                     )
                     """"
                     URL join을 위해 경로 체크
@@ -115,7 +116,7 @@ class URL:
                         self.CurrentURL = URLParseCurrentURL._replace(path=URINFO.path).geturl()
 
                     # elemtns 파싱을 위해 bs4 모듈 사용
-                    htmlparser = BeautifulSoup(Response.content.decode("utf-8", "replace").encode(), 'html.parser')
+                    htmlparser = BeautifulSoup(html, 'html.parser')
                     # form 태그 찾기
                     form = htmlparser.find("form")
                     # 만약 form 태그가 존재하는 경우 / htmlparser.find 의 경우 없는 태그를 가져올려 하는 경우 None 반환
@@ -123,7 +124,8 @@ class URL:
                         # form 태그의 action attr 가져오기
                         form_action = form.get('action')
                         form_method = form.get('method')
-                        if ((self.URLJOIN(form_action), form_method) not in self.CurrentURLCheck):
+                        action_url =self.URLJOIN(form_action)
+                        if (action_url, form_method) not in self.CurrentURLCheck:
                             # print(form, self.CurrentURL)
                             # form 태그의 method attr 가져오기
                             #print("current url : ",self.CurrentURL)
@@ -141,13 +143,13 @@ class URL:
                                 form_in_elements_data.setdefault(SubmitElement.attrs.get('name'), (value if value else RandomString(15)))
 
 
-
-                            self.GETLinks(
-                                URL = urljoin(self.CurrentURL,form_action),
-                                # 잘못된 method가 들어 있는 경우를 대비하여 ['GET','PUT','POST','HEAD'] 메서드만 허용 ( 만약 다른 메서드도 넣어야 될 경우 추가 예정 )
-                                method = (form_method if form_method in ['GET','PUT','POST','HEAD'] else 'GET'),
-                                data = form_in_elements_data,
-                            )
+                            if ((action_url,method) not in self.CurrentURLCheck) and urlparse(action_url).netloc == self.FirstURLParse.netloc:
+                                self.GETLinks(
+                                    URL = urljoin(self.CurrentURL,form_action),
+                                    # 잘못된 method가 들어 있는 경우를 대비하여 ['GET','PUT','POST','HEAD'] 메서드만 허용 ( 만약 다른 메서드도 넣어야 될 경우 추가 예정 )
+                                    method = (form_method if form_method in ['GET','PUT','POST','HEAD'] else 'GET'),
+                                    data = form_in_elements_data,
+                                )
                     # self.tags => 파싱하기 위한 태그들과 속성 dict
                     for attribute, tag in self.tags.items():
                         # 파싱 할 모든 tag를 가져오기
