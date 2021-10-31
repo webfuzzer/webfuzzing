@@ -2,7 +2,6 @@ from Crawler import URL
 from Search.attack import VulnFuzz
 from tldextract import extract
 from timeit import default_timer as dt
-from time import sleep
 import os
 
 if __name__ == "__main__":

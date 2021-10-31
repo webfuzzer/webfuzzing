@@ -14,6 +14,11 @@ class fuzzer_payloads:
             '\'>',
             '">',
             '</>',
+            '-->',
+            '--!>',
+            '!-->',
+            '->',
+            '--',
         ]
         # find_all(name=[for i in element_xss])
         element_xss= [

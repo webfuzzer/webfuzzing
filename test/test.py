@@ -77,7 +77,7 @@ class exam(a):
 
 b = exam()
 print(b)"""
-
+"""
 from re import L
 from bs4 import BeautifulSoup
 
@@ -97,4 +97,20 @@ for SubmitElement in form_submit_elements:
     value = SubmitElement.attrs.get('value')
     form_in_elements_data.setdefault(SubmitElement.attrs.get('name'), (value if value else ''))
 
-print(form_in_elements_data)
+print(form_in_elements_data)"""
+"""from timeit import default_timer as dt
+from random import choice
+
+d = dt()
+
+def a():
+    return choice([True,False])
+
+def time():
+    for i in range(1,10000):
+        if a():
+            pass
+        else:
+            continue
+
+print(dt() - d)"""
