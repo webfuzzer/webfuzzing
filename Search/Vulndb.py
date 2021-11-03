@@ -113,29 +113,31 @@ class ReflectedXSS:
             attribute_key_rs = RandomString(5)
             attribute_value_rs = RandomString(5)
             inner_text_rs = RandomString(5)
-            soup = BeautifulSoup(self.string_search_text(element.format(attribute_key_rs,attribute_value_rs, inner_text_rs)), 'html.parser')
-            if soup.find(attrs={attribute_key_rs.lower():attribute_value_rs}, text=inner_text_rs):
+            rs = element.format(attribute_key_rs,attribute_value_rs, inner_text_rs)
+            soup = BeautifulSoup(self.string_search_text(rs), 'html.parser')
+            if soup.find(attrs={attribute_key_rs.lower():attribute_value_rs}, text=inner_text_rs) or soup.find(attrs={attribute_value_rs.lower():attribute_value_rs}) or soup.find(text=inner_text_rs):
+                self.cross_site_scripting_test()
+            elif [rs in i.text for i in soup.find_all('script')]:
                 pass
-            elif soup.find(attrs={attribute_value_rs.lower():attribute_value_rs}):
-                pass
-            elif soup.find(text=inner_text_rs):
+            elif [rs in i for i in soup.find_all(text=lambda s: isinstance(s, Comment))]:
                 pass
 
 
         for element in self.element_empty_value:
             attribute_key_rs = RandomString(5)
             inner_text_rs = RandomString(5)
-            self.string_search_text(element.format(attribute_key_rs, inner_text_rs))
-            if soup.find(attrs={attribute_key_rs.lower():attribute_value_rs}, text=inner_text_rs):
+            rs = element.format(attribute_key_rs, inner_text_rs)
+            soup = BeautifulSoup(self.string_search_text(rs))
+            if soup.find(attrs={attribute_key_rs.lower():attribute_value_rs}, text=inner_text_rs) or soup.find(attrs={attribute_value_rs.lower():attribute_value_rs}) or soup.find(text=inner_text_rs):
+                self.cross_site_scripting_test()
+            elif [rs in i.text for i in soup.find_all('script')]:
                 pass
-            elif soup.find(attrs={attribute_value_rs.lower():attribute_value_rs}):
-                pass
-            elif soup.find(text=inner_text_rs):
+            elif [rs in i for i in soup.find_all(text=lambda s: isinstance(s, Comment))]:
                 pass
 
+
     def cross_site_scripting_test(self):
-        """
-        """
+        pass
         pass
 
 class OpenRedirect:
