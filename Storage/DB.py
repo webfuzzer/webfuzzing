@@ -51,6 +51,7 @@ class Engine():
     def init_conn(self, tabname):
         self.conn = self.engine.connect()
         self.URLGroup = Table(tabname, base.metadata, autoload=True, autoload_with=self.engine)
+        self.row_to_dict = (lambda r: {c.name: str(getattr(r, c.name)) for c in r.__table__.columns})
 
     def sqlite_engine_auto_load_select(self, column='*'):
 
@@ -65,10 +66,6 @@ class Engine():
         result = self.conn.execute(sqlite_select_query)
         a = result.fetchall()
         return a
-
-
-    def __del__(self):
-        self._sess.close_all()
 
 """
 engine = Engine()

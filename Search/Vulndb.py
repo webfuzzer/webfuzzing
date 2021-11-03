@@ -1,6 +1,7 @@
 """
 기본적인 공격 벡터 : header, cookie, post data, get data
 """
+from random import Random
 from urllib.parse import parse_qs, quote_from_bytes, urlencode, urlparse, urljoin
 from Search.payloads import fuzzer_payloads
 from bs4 import BeautifulSoup, Comment
@@ -23,171 +24,125 @@ __all__ = [
 def init_session():
     return sessions()(Site=False)
 
+attr = {
+    'first_url':1,
+    'current_url':2,
+    'method':3,
+    'history':4,
+    'history_len':5,
+    'response_url':6,
+    'response_cookies':7,
+    'response_headers':8,
+    'response_status':9,
+    'request_cookies':10,
+    'request_headers':11,
+    'data':12,
+    'body':13
+}
+
+class ReflectedXSS:
+    def __init__(self, datatable):
+        """
+        self.datatable:database content
+        self.vuln_level:vulnerability level
+        """
+        self.element_eq_pay, self.element_empty_value, self.attribute_pay, self.script_pay = fuzzer_payloads.xss()
+        self.datatable = datatable
+        self.sess = sessions.init_sess()
+        self.vuln_level = 0
+        self.paths = set()
+
+    def exploit(self):
+        """
+        """
+        for content in self.datatable:
+            self.body = b64decode(content[attr['body']]).decode()
+            self.current_url = content[attr['current_url']]
+            self.urinfo = urlparse(self.current_url)
+            self.method = content[attr['method']]
+            
+            self.search_text(
+                headers = content[attr['headers']],
+                cookies = content[attr['cookies']],
+            )
+
+    def search_text(self, headers, cookies):
+        """
+        """
+
+        rs = RandomString(5)
+
+        if self.urinfo.query:
+            qs = parse_qs(self.urinfo.query)
+            for key, value in qs:
+                if value in self.body and (rs in self.string_search_text(rs, 'qs', key = key, input = qs[:])):
+                    pass
+
+        if self.urinfo.fragment and self.urinfo.fragment in self.body and (rs in self.string_search_text(rs, 'fragment')):
+            pass
+
+        if cookies:
+            for key, value in cookies:
+                if value in self.body and (rs in self.string_search_text(rs, 'cookies', key = key, input = cookies[:])):
+                    pass
+
+        if headers:
+            for key, value in headers:
+                if value in self.body and (rs in self.string_search_text(rs, 'headers', key = key, input = headers[:])):
+                    pass
+
+    def string_search_text(self, rs, vector, key = '', input = {}):
+        """
+        search for a random string in response body
+        """
+        rs = rs
+
+        if vector == 'fragment':
+            r = self.sess.request(self.method, self.urinfo._replace(**{vector:rs}))
+        elif vector == 'qs':
+            input[key] = rs
+            r = self.sess.request(self.method, self.urinfo._replace({vector:urlencode(input, doseq=True)}))
+        else:
+            input[key] = rs
+            r = self.sess.request(self.method, **{vector:input})
+
+        return r.text
+    
+    def html_injection_test(self):
+        for element in self.element_eq_pay:
+            attribute_key_rs = RandomString(5)
+            attribute_value_rs = RandomString(5)
+            inner_text_rs = RandomString(5)
+            soup = BeautifulSoup(self.string_search_text(element.format(attribute_key_rs,attribute_value_rs, inner_text_rs)), 'html.parser')
+            if soup.find(attrs={attribute_key_rs.lower():attribute_value_rs}, text=inner_text_rs):
+                pass
+            elif soup.find(attrs={attribute_value_rs.lower():attribute_value_rs}):
+                pass
+            elif soup.find(text=inner_text_rs):
+                pass
+
+
+        for element in self.element_empty_value:
+            attribute_key_rs = RandomString(5)
+            inner_text_rs = RandomString(5)
+            self.string_search_text(element.format(attribute_key_rs, inner_text_rs))
+            if soup.find(attrs={attribute_key_rs.lower():attribute_value_rs}, text=inner_text_rs):
+                pass
+            elif soup.find(attrs={attribute_value_rs.lower():attribute_value_rs}):
+                pass
+            elif soup.find(text=inner_text_rs):
+                pass
+
+    def cross_site_scripting_test(self):
+        """
+        """
+        pass
+
 class OpenRedirect:
     def __init__(self, crawling_contents, URL, **info):
         self.crawling_contents = crawling_contents
         self.info = info
         self.URL = URL
-
-# class ReflectedXSS:
-#     def __init__(self, current_url, html, headers, cookies, data, method, **info):
-#         self.element_xss, self.attribute_xss, self.script_xss = fuzzer_payloads.xss()
-#         self.current_url = current_url
-#         self.sess = sessions().init_sess()
-#         self.info = info
-#         self.html = html
-#         self.exploit(
-#             headers = headers,
-#             cookies = cookies,
-#             data = data,
-#             method = method,
-#         )
- 
-#     def exploit(self, *, headers, cookies, data, method):
-#         """
-#         if urlparse(self.current_url).query:
-#             쿼리가 있는 경우 체크
-#             self.InputValueCheck(parse_qs(urlparse(self.current_url).query), 'qs')
-#         if cookies:
-#             self.InputValueCheck(cookies, 'cookies')
-#         if haders:
-#             self.InputValueCheck(headers, 'headers')
-#         """
-#         self.urinfo = urlparse(self.current_url)
-#         if self.urinfo.query:
-#             self.InputValueCheck(method, parse_qs(self.urinfo.query), 'params')
-#         if data:
-#             self.InputValueCheck(method, data, 'data')
-#         if cookies:
-#             self.InputValueCheck(method, cookies, 'cookies')
-#         if headers:
-#             self.InputValueCheck(method, headers, 'headers')
-
-#     def InputValueCheck(self, method, _input, space):
-#         """
-#         먼저 해당 페이지에 출력이 되어 있는지 체크 한 다음 RandomString(5)를 이용하여 랜덤 값 체크
-#         """
-#         for key, value in _input.items():
-#             soup = BeautifulSoup(self.html, 'html.parser')
-#             if type(value) == list:
-#                 value = value[0]
-#             if soup.find_all(text=value) or (True in [value in j for i in soup.find_all() for j in i.attrs.values()]) or (soup.text.find(value) != -1):
-#                 self.RequestRandomString(method, _input, key, space)
-
-#     def RequestRandomString(self, method, _input, key, space):
-
-#         randstr = RandomString(5)
-#         temp = _input
-#         temp[key] = randstr
-#         if space == 'params':
-#             r = self.sess.request(method, self.urinfo._replace(query=urlencode(temp, doseq=True)).geturl(), **self.info)
-#         else:
-#             r = self.sess.request(method, self.current_url, **{space:temp}, **self.info)
-#         if randstr in r.text:
-#             soup = BeautifulSoup(r.text, 'html.parser')
-#             if soup.find_all(text=randstr) or(True in [randstr in j for i in soup.find_all() for j in i.attrs.values()]) or (soup.text.find(randstr) != -1):
-
-#                 self.payloads_check(method,space, key,temp)
-
-#     def payloads_check(self, method, space, key, _input = {''}):
-#         for element in self.element_xss:
-#             temp = _input
-#             attrs_key_rand = RandomString(5)
-#             attrs_value_rand = RandomString(5)
-#             inner_text_rand = RandomString(5)
-#             temp[key] = element.format(f" {attrs_key_rand}={attrs_value_rand}", inner_text_rand)
-#             if space == 'params':
-#                 r = self.sess.request(method, self.urinfo._replace(query=urlencode(temp, doseq=True)).geturl(), **self.info)
-#             else:
-#                 r = self.sess.request(method, self.current_url, **{space:temp}, **self.info)
-#             soup = BeautifulSoup(r.text, 'html.parser')
-#             if soup.find(attrs={attrs_key_rand.lower():attrs_value_rand}, text=inner_text_rand) or soup.find(attrs={attrs_key_rand.lower():attrs_value_rand}):
-#                 print("\033[90m","="*50,"\033[0m")
-#                 print(self.urinfo._replace(query=urlencode(temp, doseq=True)).geturl())
-#                 print(f'\033[31m[{urlparse(self.current_url).path}] : {space} attack vector discover\033[0m')
-#                 print(f'\033[32m{_input}\033[0m')
-#                 break
-#         for attr in self.attribute_xss:
-#             pass
-#         for script in self.script_xss:
-#             pass
-#         # print("\033[90m","="*50,"\033[0m")
-#         # print(f'\033[31m[{urlparse(self.current_url).path}] : {space} attack vector discover\033[0m')
-#         # print(f'\033[32m{_input}\033[0m')
-
-
-#         # vector : query string, cookies, headers
-#         # print("\033[90m","="*50,"\033[0m")
-#         # print(f'\033[31m[{urlparse(self.current_url).path}] : {vector} attack vector discover\033[0m')
-#         # print(f'\033[32m{_input}\033[0m')
-
-class ReflectedXSS:
-    def __init__(self, current_url, html, headers, cookies, data, method, **info):
-        self.element_xss, self.attribute_xss, self.script_xss = fuzzer_payloads.xss()
-        self.urinfo = urlparse(self.current_url)
-        self.current_url = current_url
-        self.sess = sessions().init_sess()
-        self.method = method
-        self.info = info
-        self.html = html
-
-        if self.urinfo.fragment:
-            self.search_text('fragment', '', '', self.urinfo.fragment)
-        if self.urinfo.query:
-            for key, value in self.urinfo.query.items():
-                self.search_text('query', self.urinfo.query, key, value)
-        if data:
-            for key, value in data.items():
-                self.search_text('data', data, key, value)
-        if cookies:
-            for key, value in cookies.items():
-                self.search_text('cookies', cookies, key, value)
-        if headers:
-            for key, value in headers.items():
-                self.search_text('headers', headers, key, value)
-
-    def search_text(self, location, params, key, value):
-        if (['fragment', 'query'] in location) and (value in self.html):
-            self.random_string_search_text(location, params, key, value)
-        else:
-            self.random_string_search_text(location, params, key, value)
-
-    def random_string_search_text(self):
-        pass
-
-    """def exploit(self, fragment, **input):
-        if fragment:
-            self.search_text('', 'fragment', fragment)
-        for key, value in input:
-            for _key, _value in value.items():
-                self.search_text(key, _key, _value)
-
-
-    def search_text(self, key, location, value):
-        if value in self.html:
-            self.random_string_search_text(key, location, value)
-
-    def random_string_search_text(self, location, value):
-
-        rand = RandomString(5)
-
-        if ['fragment', 'query'] == location:
-            if 'query':
-                value[]
-            r = self.sess.request(method = self.method, url = self.urinfo._replace(location=))
-        else:
-            value[location] = rand"""
-            
-    
-    def html_injection_test_search_text(self):
-        
-        return True
-        return False
-
-    def xss_payloads_search_text(self):
-        
-        return True
-        return False
 
 class SQLInjection:
     def __init__(self, crawling_contents, URL, **info):

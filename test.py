@@ -56,13 +56,15 @@ sess.commit()
 dicts = sess.query(test).all()
 for i in dicts:
     print(i.__dict__)"""
+
+# from Storage.DB import Engine
+
+# engine = Engine(sess = False)
+# engine.init_conn('stealien')
+# print(engine.sqlite_engine_auto_load_select(column=['current_url']))
+
 """
 from Storage.DB import Engine
-
-engine = Engine(sess = False)
-engine.init_conn()
-print(engine.sqlite_engine_auto_load_select(tabname = 'me2nuk', column=['current_url']))"""
-"""from Storage.DB import Engine
 
 engine = Engine(sess = False)
 engine.init_conn()
@@ -114,3 +116,13 @@ def time():
             continue
 
 print(dt() - d)"""
+
+# from random import choice
+# from timeit import default_timer as dt
+# from numpy.random import choice as ch
+# a = dt()
+# for i in range(1,1000000): choice([1,2,3])
+# print(dt() - a)
+# a = dt()
+# for i in range(1,1000000): ch([1,2,3])
+# print(dt()-a)

@@ -21,7 +21,12 @@ class fuzzer_payloads:
             '--',
         ]
         # find_all(name=[for i in element_xss])
-        element_xss= [
+        element_xss_eq= [
+            '<h1{0}={1}>{2}</h1>',
+            '<fuzzing{0}={1}>{2}</fuzzing>',
+            '<a{0}={1}>{2}</a>',
+        ]
+        element_xss_empty_value = [
             '<h1{0}>{1}</h1>',
             '<fuzzing{0}>{1}</fuzzing>',
             '<a{0}>{1}</a>',
@@ -195,4 +200,4 @@ class fuzzer_payloads:
         """
 
         # element_xss , attribute_xss, script_xss = fuzzer_payloads.xss()
-        return (element_xss + [f"{exit}{element}" for element in element_xss for exit in closed]), (attribute_xss + [f"{i.format(j, '{0}')}" for i in attribute_xss for j in ["\" ", "' ", "0 ","\"/", "'/","0/ "]]), (script_xss)
+        return (element_xss_eq + [f"{exit}{element}" for element in element_xss_eq for exit in closed]), (element_xss_empty_value + [f"{exit}{element}" for element in element_xss_empty_value for exit in closed]), (attribute_xss + [f"{i.format(j, '{0}')}" for i in attribute_xss for j in ["\" ", "' ", "0 ","\"/", "'/","0/ "]]), (script_xss)
