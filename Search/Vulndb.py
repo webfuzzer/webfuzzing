@@ -49,7 +49,9 @@ class ReflectedXSS:
         self.element_eq_pay, self.element_empty_value, self.attribute_pay, self.script_pay = fuzzer_payloads.xss()
         self.datatable = datatable
         self.sess = sessions.init_sess()
+        self.message = False
         self.vuln_level = 0
+        self.req_info = {}
         self.paths = set()
 
     def exploit(self):
@@ -75,28 +77,42 @@ class ReflectedXSS:
         if self.urinfo.query:
             qs = parse_qs(self.urinfo.query)
             for key, value in qs:
-                if value in self.body and (rs in self.string_search_text(rs, 'qs', key = key, input = qs[:])):
-                    pass
-
-        if self.urinfo.fragment and self.urinfo.fragment in self.body and (rs in self.string_search_text(rs, 'fragment')):
-            pass
+                self.req_info = {'vector':'qs','key':key, 'input':qs[:]}
+                if value in self.body and (rs in self.string_search_text(rs, **self.req_info)):
+                    if self.cross_site_scripting_test():
+                        self.message=''
+                    else:
+                        self.message = ''
 
         if cookies:
             for key, value in cookies:
-                if value in self.body and (rs in self.string_search_text(rs, 'cookies', key = key, input = cookies[:])):
-                    pass
+                self.req_info = {'vector':'cookies','key':key, input:qs[:]}
+                if value in self.body and (rs in self.string_search_text(rs, **self.req_info)):
+                    if self.cross_site_scripting_test():
+                        self.message=''
+                    else:
+                        self.message = ''
 
         if headers:
             for key, value in headers:
-                if value in self.body and (rs in self.string_search_text(rs, 'headers', key = key, input = headers[:])):
-                    pass
+                self.req_info = {'vector':'headers','key':key, input:qs[:]}
+                if value in self.body and (rs in self.string_search_text(rs, **self.req_info)):
+                    if self.cross_site_scripting_test():
+                        self.message=''
+                    else:
+                        self.message = ''
+
+
+        self.req_info = {'vector':'fragment'}
+
+        if self.urinfo.fragment and self.urinfo.fragment in self.body and (rs in self.string_search_text(rs, **self.req_info)):
+            
 
     def string_search_text(self, rs, vector, key = '', input = {}):
         """
         search for a random string in response body
         """
         rs = rs
-
         if vector == 'fragment':
             r = self.sess.request(self.method, self.urinfo._replace(**{vector:rs}))
         elif vector == 'qs':
@@ -114,13 +130,13 @@ class ReflectedXSS:
             attribute_value_rs = RandomString(5)
             inner_text_rs = RandomString(5)
             rs = element.format(attribute_key_rs,attribute_value_rs, inner_text_rs)
-            soup = BeautifulSoup(self.string_search_text(rs), 'html.parser')
+            soup = BeautifulSoup(self.string_search_text(rs, **self.req_info), 'html.parser')
             if soup.find(attrs={attribute_key_rs.lower():attribute_value_rs}, text=inner_text_rs) or soup.find(attrs={attribute_value_rs.lower():attribute_value_rs}) or soup.find(text=inner_text_rs):
                 self.cross_site_scripting_test()
             elif [rs in i.text for i in soup.find_all('script')]:
-                pass
+                self.cross_site_scripting_test()
             elif [rs in i for i in soup.find_all(text=lambda s: isinstance(s, Comment))]:
-                pass
+                self.cross_site_scripting_test()
 
 
         for element in self.element_empty_value:
@@ -131,12 +147,12 @@ class ReflectedXSS:
             if soup.find(attrs={attribute_key_rs.lower():attribute_value_rs}, text=inner_text_rs) or soup.find(attrs={attribute_value_rs.lower():attribute_value_rs}) or soup.find(text=inner_text_rs):
                 self.cross_site_scripting_test()
             elif [rs in i.text for i in soup.find_all('script')]:
-                pass
+                self.cross_site_scripting_test()
             elif [rs in i for i in soup.find_all(text=lambda s: isinstance(s, Comment))]:
-                pass
+                self.cross_site_scripting_test()
 
 
-    def cross_site_scripting_test(self):
+    def cross_site_scripting_test(self, ):
         pass
         pass
 
