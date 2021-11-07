@@ -7,59 +7,99 @@ class fuzzer_payloads:
             '',
             '"',
             '\'',
+            '-->',
             ';',
             '";',
             '\';',
             '>',
+            ')>',
+            '))>',
+            '\')>',
+            '\'))>',
+            '")>',
+            '"))>',
             '\'>',
             '">',
             '</>',
-            '-->',
             '--!>',
             '!-->',
             '->',
             '--',
+            '\x00>',
+            '\x00\'',
+            '\x00"',
         ]
         # find_all(name=[for i in element_xss])
         element_xss_eq= [
-            '<h1{0}={1}>{2}</h1>',
-            '<fuzzing{0}={1}>{2}</fuzzing>',
-            '<a{0}={1}>{2}</a>',
+            '<h1 {0}={1}>{2}</h1>',
+            '<fuzzing {0}={1}>{2}</fuzzing>',
+            '<a {0}={1}>{2}</a>',
         ]
         element_xss_empty_value = [
-            '<h1{0}>{1}</h1>',
-            '<fuzzing{0}>{1}</fuzzing>',
-            '<a{0}>{1}</a>',
+            '<h1 {0}>{1}</h1>',
+            '<fuzzing {0}>{1}</fuzzing>',
+            '<a {0}>{1}</a>',
+        ]
+        attribute_injection = [
+            '"{0}={1} ',
+            '\'{0}={1} ',
+            '/{0}={1} ',
+            '\\{0}={1} ',
+            '"){0}={1} ',
+            '\'){0}={1} ',
+            '")){0}={1} ',
+            '\')){0}={1} ',
+            '"{0}={1}\t',
+            '\'{0}={1}\t',
+            '/{0}={1}\t',
+            '\\{0}={1}\t',
+            '"){0}={1}\t',
+            '\'){0}={1}\t',
+            '")){0}={1}\t',
+            '\')){0}={1}\t',
+            '"{0}={1}%20',
+            '\'{0}={1}%20',
+            '/{0}={1}%20',
+            '\\{0}={1}%20',
+            '"){0}={1}%20',
+            '\'){0}={1}%20',
+            '")){0}={1}%20',
+            '\')){0}={1}%20',
+            '"{0}={1}\x00',
+            '\'{0}={1}\x00',
+            '/{0}={1}\x00',
+            '\\{0}={1}\x00',
+            '"){0}={1}\x00',
+            '\'){0}={1}\x00',
+            '")){0}={1}\x00',
+            '\')){0}={1}\x00',
         ]
         # Response strings find
         script_xss = [
             "{0}",
-            "';//{0}",
-            "\";//{0}",
-            ";//{0}",
-            ");//{0}",
-            "));//{0}",
-            ")));//{0}",
-            "');//{0}",
-            "'));//{0}",
-            "')));//{0}",
-            "\");//{0}",
-            "\"));//{0}",
-            "\")));//{0}"
-        ]
-
-        open_redirect_pay = [
-            'location.href=\'{}\'',
-            'location.href="{}"',
-            ''
+            "';{0}",
+            "\";{0}",
+            ";{0}",
+            ");{0}",
+            "));{0}",
+            ")));{0}",
+            "');{0}",
+            "'));{0}",
+            "')));{0}",
+            "\");{0}",
+            "\"));{0}",
+            "\")));{0}"
         ]
 
         alert_box_check = [
-            ''
+            'alert()',
+            'prompt()',
+            'print()',
+            'confirm()',
         ]
 
         # find_all(attrs={'event name':'alert(1)'})
-        attribute_xss = [
+        element_tag_attribute_events = [
             'onafterprint',
             'onbeforeprint',
             'onbeforeunload',
@@ -210,4 +250,10 @@ class fuzzer_payloads:
         """
 
         # element_xss , attribute_xss, script_xss = fuzzer_payloads.xss()
-        return (element_xss_eq + [f"{exit}{element}" for element in element_xss_eq for exit in closed]), (element_xss_empty_value + [f"{exit}{element}" for element in element_xss_empty_value for exit in closed]), (attribute_xss + [f"{i.format(j, '{0}')}" for i in attribute_xss for j in ["\" ", "' ", "0 ","\"/", "'/","0/ "]]), (script_xss)
+        return \
+            (element_xss_eq + [f"{exit}{element}" for element in element_xss_eq for exit in closed]), \
+                (element_xss_empty_value + [f"{exit}{element}" for element in element_xss_empty_value for exit in closed]), \
+                    (element_tag_attribute_events + [f"{i.format(j, '{0}')}" for i in element_tag_attribute_events for j in ["\" ", "' ", "0 ","\"/", "'/","0/ "]]), \
+                        (script_xss), \
+                            alert_box_check, \
+                                attribute_injection

@@ -12,6 +12,7 @@ class VulnFuzz:
         # cookies = content[attr['request_cookies']], 
         # data = content[attr['data']],
         # method = content[attr['method']],
+        print('========== fuzzing start ==========')
         ReflectedXSS(data, **info)
             # OpenRedirect(data)
         # SQLInjection(data)

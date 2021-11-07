@@ -42,7 +42,7 @@ class Engine():
         self.URLGroup = CreateModel(self.Table)
 
     def init_db(self):
-        self.engine = create_engine('sqlite:///db/url.db') # echo=True)
+        self.engine = create_engine('sqlite:///db/test.db') # echo=True)
     
     def init_sess(self):
         self._sess = SessionMaker(bind=self.engine)

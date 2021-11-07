@@ -89,7 +89,7 @@ class URL:
                         return
                     # 중복 체크를 위해 쿼리가 존재할 경우 값만 제거되는 URL 저장
                     self.CurrentURLCheck.add((URJOIN, method))
-                    html = Response.content.decode("utf-8", "replace").encode()
+                    html = Response.content.decode("utf-8", "replace")
                     # print(self.CurrentURLCheck)
                     # Storage.DB.Engine을 이용하여 sqlite db에 url 정보 저장
                     self.engine.add(
@@ -163,8 +163,8 @@ class URL:
                                     # 하위 url 파싱을 위해 재귀 함수로 반복적인 호출
                                     # print(attr_in_link)
                                     self.GETLinks(URL = attr_in_link, method = method)
-        except:
-            pass
+        except BaseException as e:
+            print(e)
     def qs_value_empty(self, URL) -> str:
         URL = self.URLJOIN(URL)
         urinfo = urlparse(URL)
