@@ -18,7 +18,7 @@ class sessions:
 
     def init_drive(self, url):
 
-        self.CHROMEOPTION =['window-size=1920x1080', 'disable-gpu', 'no-sandbox', 'disable-dev-shm-usage', '--log-level=3']
+        self.CHROMEOPTION = ['window-size=1920x1080', 'disable-gpu', 'no-sandbox', 'disable-dev-shm-usage', '--log-level=3']
         self.PATH = {
             'nt':'\\src\\Crawler\\webdriver\\chromedriver.exe',
             'posix':'/src/Crawler/webdriver/chromedriver',
