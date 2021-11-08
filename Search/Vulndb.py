@@ -84,21 +84,27 @@ class ReflectedXSS:
             self.current_url = content[attr['current_url']]
             self.urinfo = urlparse(self.current_url)
             self.method = content[attr['method']]
-            
             self.search_text(
+                data = content[attr['data']],
                 headers = content[attr['request_headers']],
                 cookies = content[attr['request_cookies']],
             )
 
-    def search_text(self, headers, cookies):
+    def search_text(self, data, headers, cookies):
         rs = RandomString(5)
-
+        
         if self.urinfo.query:
             qs = parse_qs(self.urinfo.query)
             for key, value in qs.items():
                 if type(value) == list:
                     value = value[0]
                 self.req_info = {'vector':'qs','key':key, 'input':dict(qs)}
+                if value in self.body and (rs in self.string_search_text(rs)):
+                    self.html_injection_test()
+
+        if data:
+            for key, value in data.items():
+                self.req_info = {'vector':'data', 'key':key, 'input':dict(data)}
                 if value in self.body and (rs in self.string_search_text(rs)):
                     self.html_injection_test()
 
@@ -161,8 +167,6 @@ class ReflectedXSS:
                 self.message = (rs, self.req_info)
                 if self.cross_site_scripting_test('script'):
                     return
-            # elif [rs in i.text for i in soup.find_all('style')]:
-            #     pass
             elif [rs in i for i in soup.find_all(text=lambda s: isinstance(s, Comment))]:
                 self.message = (rs, self.req_info)
                 if self.cross_site_scripting_test('comment'):
@@ -204,24 +208,21 @@ class ReflectedXSS:
                     return True
             return False
         elif vector == 'script':
-            for script in self.script_pay:
+            """for script in self.script_pay:
                 for box in self.alert_box_check:
                     rs = script.format(box)
-                    soup = BeautifulSoup(self.string_search_text(rs))
+                    soup = BeautifulSoup(self.string_search_text(rs), 'html.parser')
                     for script_tag_element in soup.find_all(name='script'):
-                        if not re.search(self.regex, script_tag_element.text):
-                            print(rs)
+                        if rs in script_tag_element.text:
+                            print('='*50)
+                            print('javascript 취약점 발견!!!')
                             print(self.current_url)
-                            print(self.req_info)
-                            break
+                            print(rs)
+                            return True"""
                     # if soup.find(attrs={})
         else:
             return False
         return False
-
-class StoredXSS:
-    def __init__(self):
-        pass
 
 class OpenRedirect:
     def __init__(self, crawling_contents, URL, **info):

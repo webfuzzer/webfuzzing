@@ -52,6 +52,7 @@ class URL:
         self.init_engine()
         self.engine.init_table(tldextract.extract(URL).domain) # tldextract.extract(URL)을 이용하여 domian만 가져온 후 테이블 생성
         self.URLJOIN = (lambda TMPURL: urljoin(self.CurrentURL, TMPURL))
+        self.rs = RandomString(15)
 
     def Crawler(self) -> bool:
         self.GETLinks(urljoin(self.URL, '/'))
@@ -121,35 +122,31 @@ class URL:
                     form = htmlparser.find("form")
                     # 만약 form 태그가 존재하는 경우 / htmlparser.find 의 경우 없는 태그를 가져올려 하는 경우 None 반환
                     if form:
+                        # print('test : ', self.CurrentURL)
                         # form 태그의 action attr 가져오기
                         form_action = form.get('action')
                         form_method = form.get('method')
-                        action_url =self.URLJOIN(form_action)
-                        if (action_url, form_method) not in self.CurrentURLCheck:
-                            # print(form, self.CurrentURL)
-                            # form 태그의 method attr 가져오기
-                            #print("current url : ",self.CurrentURL)
-                            #print(form_method)
-                            # URL을 조합 한 뒤 method도 맞춰서 재귀 함수 작동
-                            form_in_elements_data = {}
-                            """
-                            form 
-                            """
-                            form_submit_elements = form.find_all(name=['button', 'input', 'select', 'textarea'])
-                            for SubmitElement in form_submit_elements:
-                                # if SubmitElement.name == "select":
-                                #     SubmitElement.find_all("option")
-                                value = SubmitElement.attrs.get('value')
-                                form_in_elements_data.setdefault(SubmitElement.attrs.get('name'), (value if value else RandomString(15)))
-
-
-                            if ((action_url,method) not in self.CurrentURLCheck) and urlparse(action_url).netloc == self.FirstURLParse.netloc:
-                                self.GETLinks(
-                                    URL = urljoin(self.CurrentURL,form_action),
-                                    # 잘못된 method가 들어 있는 경우를 대비하여 ['GET','PUT','POST','HEAD'] 메서드만 허용 ( 만약 다른 메서드도 넣어야 될 경우 추가 예정 )
-                                    method = (form_method if form_method in ['GET','PUT','POST','HEAD'] else 'GET'),
-                                    data = form_in_elements_data,
-                                )
+                        form_method = (form_method if form_method in ['GET','PUT','POST','HEAD'] else 'GET')
+                        action_url = self.URLJOIN(form_action)
+                        form_in_elements_data = {}
+                        """
+                        form 
+                        """
+                        form_submit_elements = form.find_all(name=['button', 'input', 'select', 'textarea'])
+                        for SubmitElement in form_submit_elements:
+                            # if SubmitElement.name == "select":
+                            #     SubmitElement.find_all("option")
+                            value = SubmitElement.attrs.get('value')
+                            form_in_elements_data.setdefault(SubmitElement.attrs.get('name'), (value if value else self.rs))
+                        if form_method != 'POST':
+                            action_url = urljoin(action_url, "?" + urlencode(form_in_elements_data, doseq=True))
+                        if ((action_url,form_method) not in self.CurrentURLCheck) and urlparse(action_url).netloc == self.FirstURLParse.netloc:
+                            self.GETLinks(
+                                URL = urljoin(action_url,form_action),
+                                # 잘못된 method가 들어 있는 경우를 대비하여 ['GET','PUT','POST','HEAD'] 메서드만 허용 ( 만약 다른 메서드도 넣어야 될 경우 추가 예정 )
+                                method = (form_method),
+                                data = form_in_elements_data,
+                            )
                     # self.tags => 파싱하기 위한 태그들과 속성 dict
                     for attribute, tag in self.tags.items():
                         # 파싱 할 모든 tag를 가져오기
