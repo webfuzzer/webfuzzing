@@ -120,11 +120,6 @@ class ReflectedXSS:
                 if value in self.body and (rs in self.string_search_text(rs)):
                     self.html_injection_test()
 
-
-        self.req_info = {'vector':'fragment'}
-        if self.urinfo.fragment and self.urinfo.fragment in self.body and (rs in self.string_search_text(rs)):
-            self.html_injection_test()
-
     def string_search_text(self, rs):
         """
         search for a random string in response body
@@ -183,6 +178,7 @@ class ReflectedXSS:
             
         4. vector == 'style'
         """
+        print(self.current_url)
         if vector == 'attr':
             for element_event in self.element_event:
                 for attr in self.attribute_injection:

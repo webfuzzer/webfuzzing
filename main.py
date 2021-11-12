@@ -1,3 +1,7 @@
+import sys
+
+sys.dont_write_bytecode = True
+
 from Crawler import URL
 from Search.attack import VulnFuzz
 from tldextract import extract

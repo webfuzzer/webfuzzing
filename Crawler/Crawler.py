@@ -116,70 +116,38 @@ class URL:
                     if URINFO.path != URLParseCurrentURL.path:
                         self.CurrentURL = URLParseCurrentURL._replace(path=URINFO.path).geturl()
 
-                    # elemtns 파싱을 위해 bs4 모듈 사용
                     htmlparser = BeautifulSoup(html, 'html.parser')
-                    # form 태그 찾기
                     form = htmlparser.find("form")
-                    # 만약 form 태그가 존재하는 경우 / htmlparser.find 의 경우 없는 태그를 가져올려 하는 경우 None 반환
                     if form:
-                        # print('test : ', self.CurrentURL)
-                        # form 태그의 action attr 가져오기
                         form_action = form.get('action')
                         form_method = form.get('method')
                         form_method = (form_method if form_method in ['GET','PUT','POST','HEAD'] else 'GET')
                         action_url = self.URLJOIN(form_action)
                         form_in_elements_data = {}
-                        """
-                        form 
-                        """
-                        form_submit_elements = form.find_all(name=['button', 'input', 'select', 'textarea'])
-                        for SubmitElement in form_submit_elements:
-                            # if SubmitElement.name == "select":
-                            #     SubmitElement.find_all("option")
-                            value = SubmitElement.attrs.get('value')
-                            form_in_elements_data.setdefault(SubmitElement.attrs.get('name'), (value if value else self.rs))
-                        if form_method != 'POST':
-                            action_url = urljoin(action_url, "?" + urlencode(form_in_elements_data, doseq=True))
-                        if ((action_url,form_method) not in self.CurrentURLCheck) and urlparse(action_url).netloc == self.FirstURLParse.netloc:
-                            self.GETLinks(
-                                URL = urljoin(action_url,form_action),
-                                # 잘못된 method가 들어 있는 경우를 대비하여 ['GET','PUT','POST','HEAD'] 메서드만 허용 ( 만약 다른 메서드도 넣어야 될 경우 추가 예정 )
-                                method = (form_method),
-                                data = form_in_elements_data,
-                            )
-                    # self.tags => 파싱하기 위한 태그들과 속성 dict
+                        if (action_url, form_method) not in self.CurrentURLCheck:
+                            """
+                            form 
+                            """
+                            form_submit_elements = form.find_all(name=['button', 'input', 'select', 'textarea'])
+                            for SubmitElement in form_submit_elements:
+                                value = SubmitElement.attrs.get('value')
+                                form_in_elements_data.setdefault(SubmitElement.attrs.get('name'), (value if value else self.rs))
+                            if form_method != 'POST':
+                                action_url = urljoin(action_url, "?" + urlencode(form_in_elements_data, doseq=True))
+                            if ((action_url,form_method) not in self.CurrentURLCheck) and urlparse(action_url).netloc == self.FirstURLParse.netloc:
+                                self.GETLinks(
+                                    URL = urljoin(action_url,form_action),
+                                    method = (form_method),
+                                    data = form_in_elements_data,
+                                )
                     for attribute, tag in self.tags.items():
-                        # 파싱 할 모든 tag를 가져오기
                         for element in htmlparser.find_all(tag):
-                            # 만약 해당 태그에 파싱 할 속성이 있는 경우
                             if attribute in element.attrs:
-                                # 해당 속성 안에 있는 URL 가져오기
                                 attr_in_link = self.URLJOIN(element.get(attribute))
-                                # 가져온 URL을 이미 가져왔는지 and 해당 URL이 Crawling URL과 같은 domain인지 체크
                                 if ((attr_in_link,method, ) not in self.CurrentURLCheck) and urlparse(attr_in_link).netloc == self.FirstURLParse.netloc:
-                                    # 하위 url 파싱을 위해 재귀 함수로 반복적인 호출
-                                    # print(attr_in_link)
                                     self.GETLinks(URL = attr_in_link, method = method)
         except BaseException as e:
-            print(e)
-    def qs_value_empty(self, URL) -> str:
-        URL = self.URLJOIN(URL)
-        urinfo = urlparse(URL)
-        # url에 쿼리가 존재하는지 체크
-        if urinfo.query:
-            """
-            URL에 있는 쿼리를 정렬 한 뒤 값만 제거
-
-            -> 쿼리를 딕셔너리로 분리 
-                -> sorted 함수를 이용하여 키 값을 기준으로 정렬 
-                    -> dict.formkeys 를 이용하여 빈값으로 변경
-                        -> urlencode(doseq=True) 함수를 이용해 딕셔너리를 쿼리로 재조합
-                            -> unqoute를 이용해 URL인코딩이 되어 있는 경우 디코딩
-                                -> urljoin으로 올바른 URL로 조합
-            """
-            return urljoin(self.URL, unquote(urlencode(dict.fromkeys(sorted(parse_qs(urinfo.query)), ''), doseq=True)))
-        # 쿼리가 존재하지 않는 경우 URL 반환
-        return URL
+            return
 
     def init_engine(self) -> None:
         # sqlite에 데이터 저장을 위해 Engine Class 생성
