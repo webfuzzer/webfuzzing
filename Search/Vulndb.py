@@ -241,10 +241,10 @@ class OSCommandInjection:
         self.sess = sessions.init_sess()
 
 class ServerSideTemplateInjection:
-    def __init__(self, crawling_contents, URL, **info):
-        self.crawling_contents = crawling_contents
-        self.info = info
-        self.URL = URL
+    def __init__(self, datatable) -> None:
+        self.database = datatable
+        self.sess = sessions.init_sess()
+        self.pay = fuzzer_payloads.ssti()
         self.operator = [
             '+',
             '-',
