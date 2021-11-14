@@ -4,7 +4,7 @@
 from urllib.parse import parse_qs, urlencode, urlparse, urljoin
 from Search.payloads import fuzzer_payloads
 from bs4 import BeautifulSoup, Comment
-from Utils.utils import RandomString
+from Utils.utils import RandomString, double_randint
 from base64 import b64decode
 from Crawler import sessions
 import re
@@ -68,7 +68,7 @@ class ReflectedXSS:
                             self.attribute_injection, \
                                 self.cross_site_scriping_pay\
                                     = fuzzer_payloads.xss()
-        self.regex = '[\'\"\`][a-z0-9A-Z|\(\)]*[\"\`\']'
+        self.REGEX_sub = """([`'"](?!'"`).*?[`'"])|(\/\/.*)|(\/\*((.|\n)*)\*\/)"""
         self.datatable = datatable
         self.sess = sessions().init_sess()
         self.input_payload = ''
@@ -178,7 +178,6 @@ class ReflectedXSS:
             
         4. vector == 'style'
         """
-        print(self.current_url)
         if vector == 'attr':
             for element_event in self.element_event:
                 for attr in self.attribute_injection:
@@ -204,85 +203,135 @@ class ReflectedXSS:
                     return True
             return False
         elif vector == 'script':
-            """for script in self.script_pay:
-                for box in self.alert_box_check:
-                    rs = script.format(box)
-                    soup = BeautifulSoup(self.string_search_text(rs), 'html.parser')
-                    for script_tag_element in soup.find_all(name='script'):
-                        if rs in script_tag_element.text:
-                            print('='*50)
-                            print('javascript 취약점 발견!!!')
-                            print(self.current_url)
-                            print(rs)
-                            return True"""
-                    # if soup.find(attrs={})
-        else:
-            return False
+            for script_pay in self.script_pay:
+                soup = BeautifulSoup(self.string_search_text(script_pay), 'html.parser')
+                for script_tag in soup.find_all('script'):
+                    temp = re.sub(self.REGEX_sub, '', script_tag.string)
+                    if True in [i in temp for i in [ 'alert()', 'prompt()', 'print()', 'confirm()']]:
+                        print("="*50)
+                        print('script 취약점 발견!')
+                        print(self.current_url)
+                        print(script_pay)
+                        return True
         return False
 
 class OpenRedirect:
-    def __init__(self, crawling_contents, URL, **info):
-        """
-        OpenRedirect class:
-            attack vector[
-                1. query string,
-                2. data(post data),
-                3. cookies,
-                4. headers,
-                5. fragment,
-                6. path
-            ]
-
-        1. sqlite3 database 정보를 가지고 history 가 있는 경우 체크
-        2. 만약 hisrtory가 존재하는 경우 history 전의 response class를 가져와 url 체크
-        3. redirect 전의 response 정보에 request 정보에 있는 URL로 이동이 된 경우 체크
-        4. 만약 값에 있는 url로 이동한 경우에는 Open Redirect payload를 입력하여 history가 생기는지 체크
-        5. 만약 location.replace , location.href를 이용하여 OpenRedirect vuln이 발생하는 경우 regex를 이용하여 search
-        6. 그런 다음 selenium 모듈을 이용해 url 이동 감지
-        7. 보고서 작성
-        """
-        self.crawling_contents = crawling_contents
-        self.info = info
-        self.URL = URL
+    def __init__(self, datatable):
+        self.database = datatable
+        self.sess = sessions.init_sess()        
 
 class SQLInjection:
-    def __init__(self, crawling_contents, URL, **info):
-        self.crawling_contents = crawling_contents
-        self.info = info
-        self.URL = URL
+    def __init__(self, datatable) -> None:
+        self.database = datatable
+        self.sess = sessions.init_sess()
 
 class CrossSiteRequestForgery:
-    def __init__(self, crawling_contents, URL, **info):
-        self.crawling_contents = crawling_contents
-        self.info = info
-        self.URL = URL
+    def __init__(self, datatable) -> None:
+        self.database = datatable
+        self.sess = sessions.init_sess()
 
 class NOSQLInjection:
-    def __init__(self, crawling_contents, URL, **info):
-        self.crawling_contents = crawling_contents
-        self.info = info
-        self.URL = URL
+    def __init__(self, datatable) -> None:
+        self.database = datatable
+        self.sess = sessions.init_sess()
 
 class OSCommandInjection:
-    def __init__(self, crawling_contents, URL, **info):
-        self.crawling_contents = crawling_contents
-        self.info = info
-        self.URL = URL
+    def __init__(self, datatable) -> None:
+        self.database = datatable
+        self.sess = sessions.init_sess()
 
 class ServerSideTemplateInjection:
     def __init__(self, crawling_contents, URL, **info):
         self.crawling_contents = crawling_contents
         self.info = info
         self.URL = URL
+        self.operator = [
+            '+',
+            '-',
+            '*',
+            '/',
+            '%',
+            '**',
+            '^',
+            '&',
+            '|',
+        ]
+        
+        self.exploit()
+    
+    def exploit(self):
+        for content in self.datatable:
+            self.body = b64decode(content[attr['body']]).decode()
+            self.current_url = content[attr['current_url']]
+            self.urinfo = urlparse(self.current_url)
+            self.method = content[attr['method']]
+            self.request_key = {
+                'data':content[attr['data']],
+                'headers':content[attr['request_headers']],
+                'cookies':content[attr['request_cookies']],
+            }
+            self.random_operator()
+
+    def search_text(self, rs):
+        if self.urinfo.query:
+            qs = parse_qs(self.urinfo.query)
+            for key, value in qs.items():
+                if type(value) == list:
+                    value = value[0]
+                self.req_info = {'vector':'qs','key':key, 'input':dict(qs)}
+                if value in self.body and (rs in self.string_search_text(rs)):
+                    print('SSTI 취약점 발생함!')
+                    print(self.req_info, self.method, self.current_url)
+
+        if self.request_key['data']:
+            for key, value in self.request_key['data'].items():
+                self.req_info = {'vector':'data', 'key':key, 'input':dict(self.request_key['data'])}
+                if value in self.body and (rs in self.string_search_text(rs)):
+                    print('SSTI 취약점 발생함!')
+                    print(self.req_info, self.method, self.current_url)
+
+        if self.request_key['cookies']:
+            for key, value in self.request_key['cookies'].items():
+                self.req_info = {'vector':'cookies','key':key, 'input':dict(self.request_key['cookies'])}
+                if value in self.body and (rs in self.string_search_text(rs)):
+                    print('SSTI 취약점 발생함!')
+                    print(self.req_info, self.method, self.current_url)
+
+        if self.request_key['headers']:
+            for key, value in self.request_key['headers'].items():
+                self.req_info = {'vector':'headers','key':key, 'input':dict(self.request_key['headers'])}
+                if value in self.body and (rs in self.string_search_text(rs)):
+                    print('SSTI 취약점 발생함!')
+                    print(self.req_info, self.method, self.current_url)
+
+    def string_search_text(self, rs):
+        """
+        search for a random string in response body
+        """
+        temp = self.req_info['input']
+        rs = rs
+        if self.req_info['vector'] == 'fragment':
+            r = self.sess.request(self.method, self.urinfo._replace(**{self.req_info['vector']:rs}).geturl())
+        elif self.req_info['vector'] == 'qs':
+            temp[self.req_info['key']] = rs
+            r = self.sess.request(self.method, self.urinfo._replace(query=urlencode(temp, doseq=True)).geturl())
+        else:
+            temp[self.req_info['key']] = rs
+            r = self.sess.request(self.method, self.current_url, **{self.req_info['vector']:temp})
+
+        return r.text
+    def random_operator(self):
+        for op in self.operator:
+            oper = double_randint(2)
+            result = eval(f'{oper[0]}{op}{oper[1]}')
+            self.search_text(result)
 
 class LocalFileInclusion:
-    def __init__(self, crawling_contents, URL, **info):
-        self.crawling_contents = crawling_contents
-        self.info = info
-        self.URL = URL
+    def __init__(self, datatable) -> None:
+        self.database = datatable
+        self.sess = sessions.init_sess()
 
 class RemoteFileInclusion:
-    def __init__(self, crawling_contents, URL, **info):
-        self.crawling_contents = crawling_contents
-        self.info = info
-        self.URL = URL
+    def __init__(self, datatable) -> None:
+        self.database = datatable
+        self.sess = sessions.init_sess()

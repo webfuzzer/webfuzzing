@@ -77,20 +77,30 @@ class fuzzer_payloads:
             '\')){0}={1}\x00',
         ]
         # Response strings find
-        script_xss = [
-            "{0}",
-            "';{0}",
-            "\";{0}",
-            ";{0}",
-            ");{0}",
-            "));{0}",
-            ")));{0}",
-            "');{0}",
-            "'));{0}",
-            "')));{0}",
-            "\");{0}",
-            "\"));{0}",
-            "\")));{0}"
+
+        script_ignore = [
+            ';//',
+            ';\'',
+            ';\"',
+            ';`',
+            ';(\'',
+            ';(\"'
+            ';(`'
+            ';((\'',
+            ';((\"',
+            ';((`'
+        ]
+
+        script_start = [
+            '\';',
+            '\";',
+            '\`;',
+            '\');',
+            '\");',
+            '\`);',
+            '\'));',
+            '\"));',
+            '\`));'
         ]
 
         alert_box_check = [
@@ -256,7 +266,21 @@ class fuzzer_payloads:
             (element_xss_eq + [f"{exit}{element}" for element in element_xss_eq for exit in closed]), \
                 (element_xss_empty_value + [f"{exit}{element}" for element in element_xss_empty_value for exit in closed]), \
                     (element_tag_attribute_events + [f"{i.format(j, '{0}')}" for i in element_tag_attribute_events for j in ["\" ", "' ", "0 ","\"/", "'/","0/ "]]), \
-                        (script_xss), \
+                        ([f'{j}{i}{k}' for i in alert_box_check for j in script_start for k in script_ignore]), \
                             alert_box_check, \
                                 attribute_injection, \
                                     (cross_site_scriping_pay + [f"{exit}{element}" for element in cross_site_scriping_pay for exit in closed])
+
+    @staticmethod
+    def ssti():
+        template_engine_syntax = [
+            '{}',
+            '{{{{{}}}}}'
+            '${{{}}}',
+            '<%={}%>',
+            '${{{{{}}}}}',
+            '@({})',
+            '#{{{}}}',
+        ]
+
+        return template_engine_syntax

@@ -1,5 +1,9 @@
 from string import ascii_letters, digits
-from random import choice
+from random import choice, randint
 
 def RandomString(strlen, digit=True):
-    return ''.join([choice(ascii_letters + (digits if digit else '')) for _ in range(0,strlen)])
+    randstr = ascii_letters + (digits if digit else '')
+    return ''.join([choice(randstr) for _ in range(0,strlen)])
+
+def double_randint(len):
+    return (randint(0,9) for _ in range(0,len))

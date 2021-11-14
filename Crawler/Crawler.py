@@ -7,10 +7,10 @@ from Storage.DB import Engine
 from bs4 import BeautifulSoup
 import tldextract
 import pickle
+import sys, os
 
 class URL:
     def __init__(self, URL, Site = False, **info) -> None:
-        # self.tags -> 파싱할 태그, 속성 리스트
         self.tags = {
             'href':[
                     'a',
@@ -37,9 +37,7 @@ class URL:
                     'object',
                 ],
         }
-        # Crawling 최적화를 위해 서버에서 계속 반환을 해주지 않는 경우 연결 끊기 위해 최대 5초 대기
         info.setdefault('timeout', 5)
-        # headers를 필터링 하는 경우를 대비하여 User-Agent에 Chrome/93.0.4577.63 버전으로 추가
         info.setdefault('headers', {'User-Agent':'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/93.0.4577.63 Safari/537.36'})
         self.info = info
         self.CurrentURL = self.URL = URL
@@ -50,7 +48,7 @@ class URL:
             Site
         )
         self.init_engine()
-        self.engine.init_table(tldextract.extract(URL).domain) # tldextract.extract(URL)을 이용하여 domian만 가져온 후 테이블 생성
+        self.engine.init_table(tldextract.extract(URL).domain)
         self.URLJOIN = (lambda TMPURL: urljoin(self.CurrentURL, TMPURL))
         self.rs = RandomString(15)
 
@@ -62,12 +60,8 @@ class URL:
         """GETLinks 함수를 이용하여 최상위 경로부터 다양한 모든 URL을 파싱할 수 있습니다.
         해당 함수의 경우 다양한 필터링을 거쳐 self.tags에 있는 attrs들을 가지고 파싱하며 파싱한 URL, method, history length 등 다양한 정보를 Storage.DB.Engine를 통하여 /db/url.db에 정보를 저장 합니다.
         """
-        # URL이 존재하는 경우 (False, None)인 경우 pass
         URINFO = urlparse(URL)
         URJOIN = self.URLJOIN(URL)
-        print(URL)
-
-        # print(URJOIN)
         try:
             if URL:
                 """
@@ -89,7 +83,7 @@ class URL:
                         # 만약 mail:me2nuk.com 같이 잘못된 schema으로 요청 할 경우 try except 으로 예외 처리하여 return None
                         return
                     # 중복 체크를 위해 쿼리가 존재할 경우 값만 제거되는 URL 저장
-                    self.CurrentURLCheck.add((URJOIN, method))
+                    self.CurrentURLCheck.add((URJOIN, method, str(data)))
                     html = Response.content.decode("utf-8", "replace")
                     # print(self.CurrentURLCheck)
                     # Storage.DB.Engine을 이용하여 sqlite db에 url 정보 저장
@@ -119,35 +113,39 @@ class URL:
                     htmlparser = BeautifulSoup(html, 'html.parser')
                     form = htmlparser.find("form")
                     if form:
+
                         form_action = form.get('action')
                         form_method = form.get('method')
                         form_method = (form_method if form_method in ['GET','PUT','POST','HEAD'] else 'GET')
                         action_url = self.URLJOIN(form_action)
                         form_in_elements_data = {}
-                        if (action_url, form_method) not in self.CurrentURLCheck:
-                            """
-                            form 
-                            """
-                            form_submit_elements = form.find_all(name=['button', 'input', 'select', 'textarea'])
-                            for SubmitElement in form_submit_elements:
-                                value = SubmitElement.attrs.get('value')
-                                form_in_elements_data.setdefault(SubmitElement.attrs.get('name'), (value if value else self.rs))
-                            if form_method != 'POST':
-                                action_url = urljoin(action_url, "?" + urlencode(form_in_elements_data, doseq=True))
-                            if ((action_url,form_method) not in self.CurrentURLCheck) and urlparse(action_url).netloc == self.FirstURLParse.netloc:
-                                self.GETLinks(
-                                    URL = urljoin(action_url,form_action),
-                                    method = (form_method),
-                                    data = form_in_elements_data,
-                                )
+                        form_submit_elements = form.find_all(name=['button', 'input', 'select', 'textarea'])
+
+                        for SubmitElement in form_submit_elements:
+                            value = SubmitElement.attrs.get('value')
+                            form_in_elements_data.setdefault(SubmitElement.attrs.get('name'), (value if value else self.rs))
+
+                        if form_method != 'POST':
+                            action_url = urljoin(action_url, "?" + urlencode(form_in_elements_data, doseq=True))
+
+                        if ((action_url,form_method, str(data)) not in self.CurrentURLCheck) and urlparse(action_url).netloc == self.FirstURLParse.netloc:
+                            self.GETLinks(
+                                URL = action_url,
+                                method = (form_method),
+                                data = form_in_elements_data,
+                            )
+
                     for attribute, tag in self.tags.items():
                         for element in htmlparser.find_all(tag):
                             if attribute in element.attrs:
                                 attr_in_link = self.URLJOIN(element.get(attribute))
-                                if ((attr_in_link,method, ) not in self.CurrentURLCheck) and urlparse(attr_in_link).netloc == self.FirstURLParse.netloc:
+                                if ((attr_in_link,method, str(data)) not in self.CurrentURLCheck) and urlparse(attr_in_link).netloc == self.FirstURLParse.netloc:
                                     self.GETLinks(URL = attr_in_link, method = method)
         except BaseException as e:
-            return
+            print(e)
+            # exc_type, exc_obj, exc_tb = sys.exc_info()
+            # fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+            # print(exc_type, fname, exc_tb.tb_lineno, e)
 
     def init_engine(self) -> None:
         # sqlite에 데이터 저장을 위해 Engine Class 생성
