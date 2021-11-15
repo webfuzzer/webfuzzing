@@ -4,22 +4,24 @@
 
 ```
 .
-│─  main.py
-│─  README.md
-│─  requirements.txt
-│─  test.py
-│
-├─ Crawler
-│    │─ Crawler.py
-│    │─ sessions.py
-│    └─ __init__.py
-├─ db
-│  └─ url.db
-├─ Search
-│    │─ payloads.py
-│    └─ run.py
-└─ Storage
-     │─ DB.py
-     └─ model
-          └─ URL.py
+├── Crawler
+│   ├── Crawler.py
+│   ├── __init__.py
+│   └── sessions.py
+├── README.md
+├── Search
+│   ├── Vulndb.py
+│   ├── attack.py
+│   └── payloads.py
+├── Storage
+│   ├── DB.py
+│   └── model
+│       └── URL.py
+├── Utils
+│   └── utils.py
+├── config.yml
+├── db
+│   └── url.db
+├── main.py
+└── requirements.txt
 ```
