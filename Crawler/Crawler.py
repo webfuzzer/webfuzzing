@@ -7,7 +7,6 @@ from Storage.DB import Engine
 from bs4 import BeautifulSoup
 import tldextract
 import pickle
-import sys, os
 
 class URL:
     def __init__(self, URL, Site = False, **info) -> None:
@@ -62,6 +61,7 @@ class URL:
         """
         URINFO = urlparse(URL)
         URJOIN = self.URLJOIN(URL)
+        print(URL)
         try:
             if URL:
                 """
@@ -102,7 +102,7 @@ class URL:
                         data = data,
                         body = b64encode(html.encode()).decode(),
                     )
-                    """"
+                    """
                     URL join을 위해 경로 체크
                     urlparse("https://www.google.com/path/example/").path -> /path/example/
                     """

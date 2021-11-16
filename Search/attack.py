@@ -1,3 +1,4 @@
+from threading import Thread
 from tldextract import extract
 from Storage.DB import Engine
 from base64 import b64decode
@@ -10,6 +11,6 @@ class VulnFuzz:
         data = engine.sqlite_engine_auto_load_select()
         print('========== fuzzing start ==========')
         ReflectedXSS(data, **info)
-        # OpenRedirect(data)
+        OpenRedirect(data, **info)
         # SQLInjection(data)
         # LocalFileInclusion(data)

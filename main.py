@@ -19,3 +19,4 @@ if __name__ == "__main__":
         Crawling.Crawler()
         Crawling.closed()
         VulnFuzz(domain, url)
+        

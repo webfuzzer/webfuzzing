@@ -84,11 +84,15 @@ class ReflectedXSS:
             self.current_url = content[attr['current_url']]
             self.urinfo = urlparse(self.current_url)
             self.method = content[attr['method']]
-            self.search_text(
-                data = content[attr['data']],
-                headers = content[attr['request_headers']],
-                cookies = content[attr['request_cookies']],
-            )
+            print(self.current_url)
+            try:
+                self.search_text(
+                    data = content[attr['data']],
+                    headers = content[attr['request_headers']],
+                    cookies = content[attr['request_cookies']],
+                )
+            except:
+                continue
 
     def search_text(self, data, headers, cookies):
         rs = RandomString(5)
@@ -218,7 +222,74 @@ class ReflectedXSS:
 class OpenRedirect:
     def __init__(self, datatable):
         self.database = datatable
-        self.sess = sessions.init_sess()        
+        self.sess = sessions().init_sess()
+        self.open_redirect_pay = fuzzer_payloads.openredirect()
+
+        self.exploit()
+
+    def exploit(self):
+        for content in self.database:
+            self.body = b64decode(content[attr['body']]).decode()
+            self.current_url = content[attr['current_url']]
+            self.urinfo = urlparse(self.current_url)
+            self.method = content[attr['method']]
+            try:
+                self.request(
+                    data = content[attr['data']],
+                    headers = content[attr['request_headers']],
+                    cookies = content[attr['request_cookies']],
+                )
+            except:
+                continue
+
+    def request(self, data, headers, cookies):
+        if self.urinfo.query:
+            qs = parse_qs(self.urinfo.query)
+            for key, value in qs.items():
+                if type(value) == list:
+                    value = value[0]
+                self.req_info = {'vector':'qs','key':key, 'input':dict(qs)}
+                self.redirect_check()
+        if data:
+            for key, value in data.items():
+                self.req_info = {'vector':'data', 'key':key, 'input':dict(data)}
+                self.redirect_check()
+        if cookies:
+            for key, value in cookies.items():
+                self.req_info = {'vector':'cookies','key':key, 'input':dict(cookies)}
+                self.redirect_check()
+        if headers:
+            for key, value in headers.items():
+                self.req_info = {'vector':'headers','key':key, 'input':dict(headers)}
+                self.redirect_check()
+
+    def pay_request(self, pay):
+        """
+        search for a random string in response body
+        """
+        temp = self.req_info['input']
+        pay = pay
+        if self.req_info['vector'] == 'fragment':
+            r = self.sess.request(self.method, self.urinfo._replace(**{self.req_info['vector']:pay}).geturl())
+        elif self.req_info['vector'] == 'qs':
+            temp[self.req_info['key']] = pay
+            r = self.sess.request(self.method, self.urinfo._replace(query=urlencode(temp, doseq=True)).geturl())
+        else:
+            temp[self.req_info['key']] = pay
+            r = self.sess.request(self.method, self.current_url, **{self.req_info['vector']:temp})
+
+        return r
+
+    def redirect_check(self):
+        for redirect in self.open_redirect_pay:
+            self.r = self.pay_request(redirect)
+            if self.r.headers['Location']:
+                print('open redirect 취약점 감지됨')
+            soup = BeautifulSoup(self.r.text, 'html.parser')
+            for script in soup.find_all('script'):
+                for js in script.string.splitlines():
+                    if js in ['locatio', 'open'] and redirect in js:
+                        print('open redirect 취약점 감지됨')
 
 class SQLInjection:
     def __init__(self, datatable) -> None:
