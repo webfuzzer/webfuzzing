@@ -7,7 +7,11 @@ from bs4 import BeautifulSoup, Comment
 from Utils.utils import RandomString, double_randint
 from base64 import b64decode
 from Crawler import sessions
+import warnings
+import sys, os
 import re
+
+warnings.filterwarnings("ignore", category=UserWarning, module='bs4')
 
 __all__ = [
     'ReflectedXSS',
@@ -41,7 +45,7 @@ attr = {
 }
 
 class ReflectedXSS:
-    def __init__(self, datatable):
+    def __init__(self, datatable, **info):
         """
         ReflectedXSS Class:
             attack vector
@@ -75,6 +79,7 @@ class ReflectedXSS:
         self.message = False
         self.vuln_level = 0
         self.req_info = {}
+        self.info = info
 
         self.exploit()
 
@@ -84,7 +89,6 @@ class ReflectedXSS:
             self.current_url = content[attr['current_url']]
             self.urinfo = urlparse(self.current_url)
             self.method = content[attr['method']]
-            print(self.current_url)
             try:
                 self.search_text(
                     data = content[attr['data']],
@@ -131,13 +135,13 @@ class ReflectedXSS:
         temp = self.req_info['input']
         rs = rs
         if self.req_info['vector'] == 'fragment':
-            r = self.sess.request(self.method, self.urinfo._replace(**{self.req_info['vector']:rs}).geturl())
+            r = self.sess.request(self.method, self.urinfo._replace(**{self.req_info['vector']:rs}).geturl(), **self.info)
         elif self.req_info['vector'] == 'qs':
             temp[self.req_info['key']] = rs
-            r = self.sess.request(self.method, self.urinfo._replace(query=urlencode(temp, doseq=True)).geturl())
+            r = self.sess.request(self.method, self.urinfo._replace(query=urlencode(temp, doseq=True)).geturl(), **self.info)
         else:
             temp[self.req_info['key']] = rs
-            r = self.sess.request(self.method, self.current_url, **{self.req_info['vector']:temp})
+            r = self.sess.request(self.method, self.current_url, **{self.req_info['vector']:temp}, **self.info)
 
         return r.text
     
@@ -220,29 +224,31 @@ class ReflectedXSS:
         return False
 
 class OpenRedirect:
-    def __init__(self, datatable):
+    def __init__(self, datatable, **info):
         self.database = datatable
-        self.sess = sessions().init_sess()
         self.open_redirect_pay = fuzzer_payloads.openredirect()
-
+        self.info = info        
+        self.info.setdefault('allow_redirects', False)
         self.exploit()
 
     def exploit(self):
         for content in self.database:
+            self.sess = sessions().init_sess()
             self.body = b64decode(content[attr['body']]).decode()
             self.current_url = content[attr['current_url']]
             self.urinfo = urlparse(self.current_url)
             self.method = content[attr['method']]
-            try:
-                self.request(
-                    data = content[attr['data']],
-                    headers = content[attr['request_headers']],
-                    cookies = content[attr['request_cookies']],
-                )
-            except:
-                continue
+            headers = content[attr['request_headers']]
+            self.case_request(
+                data = content[attr['data']],
+                headers = headers,
+                cookies = content[attr['request_cookies']],
+            )
+            self.sess.close()
 
-    def request(self, data, headers, cookies):
+    def case_request(self, data, headers, cookies):
+        if headers.get('Content-Length'):
+            headers['Content-Length'] = ''
         if self.urinfo.query:
             qs = parse_qs(self.urinfo.query)
             for key, value in qs.items():
@@ -263,33 +269,46 @@ class OpenRedirect:
                 self.req_info = {'vector':'headers','key':key, 'input':dict(headers)}
                 self.redirect_check()
 
-    def pay_request(self, pay):
+    def pay_request(self, pay = ''):
         """
         search for a random string in response body
         """
+
         temp = self.req_info['input']
         pay = pay
         if self.req_info['vector'] == 'fragment':
-            r = self.sess.request(self.method, self.urinfo._replace(**{self.req_info['vector']:pay}).geturl())
+            r = self.sess.request(self.method, self.urinfo._replace(**{self.req_info['vector']:pay}).geturl(), **self.info)
         elif self.req_info['vector'] == 'qs':
             temp[self.req_info['key']] = pay
-            r = self.sess.request(self.method, self.urinfo._replace(query=urlencode(temp, doseq=True)).geturl())
+            r = self.sess.request(self.method, self.urinfo._replace(query=urlencode(temp, doseq=True)).geturl(), **self.info)
         else:
             temp[self.req_info['key']] = pay
-            r = self.sess.request(self.method, self.current_url, **{self.req_info['vector']:temp})
+            r = self.sess.request(self.method, self.current_url, **{self.req_info['vector']:temp}, **self.info)
 
         return r
 
     def redirect_check(self):
+        """
+        1. 만약 파라미터로 인해 이미 리다이렉션이 되는 코드가 있는 경우
+            1.1. 파라미터를 없앤 뒤 redirect 감지
+        """
         for redirect in self.open_redirect_pay:
             self.r = self.pay_request(redirect)
-            if self.r.headers['Location']:
-                print('open redirect 취약점 감지됨')
+            if self.r.headers.get('Location'):
+                print('='*50)
+                print('[header] : open redirect 취약점 감지됨')
+                print(self.current_url)
+                print(self.req_info)
+                return
             soup = BeautifulSoup(self.r.text, 'html.parser')
             for script in soup.find_all('script'):
                 for js in script.string.splitlines():
                     if js in ['locatio', 'open'] and redirect in js:
-                        print('open redirect 취약점 감지됨')
+                        print('='*50)
+                        print('[js] : open redirect 취약점 감지됨')
+                        print(self.current_url)
+                        print(self.req_info)
+                        return
 
 class SQLInjection:
     def __init__(self, datatable) -> None:
