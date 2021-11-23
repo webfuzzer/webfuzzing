@@ -1,5 +1,4 @@
 import sys
-
 sys.dont_write_bytecode = True
 
 from Crawler import URL
@@ -12,10 +11,15 @@ if __name__ == "__main__":
     if os.path.exists('.\\db\\url.db'):
             os.remove('.\\db\\url.db')
             print(f'[{os.getcwd()}\\db\\url.db] : remove')
-    urls = ["http://18.179.206.187/"]
+    urls = [
+        "http://18.179.206.187/"
+    ]
+
+    info = {}
+
     for url in urls:
         domain = extract(url).domain
-        Crawling = URL(url)
+        Crawling = URL(url, **info)
         Crawling.Crawler()
         Crawling.closed()
-        VulnFuzz(domain, url)
+        VulnFuzz(domain, **info)

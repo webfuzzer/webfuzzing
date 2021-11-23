@@ -14,6 +14,7 @@ class sessions:
 
     def init_sess(self):
         self.sess = Session()
+        self.sess.max_redirects = 10
         return self.sess
 
     def init_drive(self, url):

@@ -82,8 +82,9 @@ class URL:
                     except InvalidSchema:
                         # 만약 mail:me2nuk.com 같이 잘못된 schema으로 요청 할 경우 try except 으로 예외 처리하여 return None
                         return
+                    # URJOIN = Response.url if urlparse(URJOIN).netloc == urlparse(Response.url).netloc else URJOIN
                     # 중복 체크를 위해 쿼리가 존재할 경우 값만 제거되는 URL 저장
-                    self.CurrentURLCheck.add((URJOIN, method, str(data)))
+                    self.CurrentURLCheck.add((URJOIN, method, str(data),))
                     html = Response.content.decode("utf-8", "replace")
                     # print(self.CurrentURLCheck)
                     # Storage.DB.Engine을 이용하여 sqlite db에 url 정보 저장
@@ -102,6 +103,8 @@ class URL:
                         data = data,
                         body = b64encode(html.encode()).decode(),
                     )
+                    if len(Response.history) and ((Response.url,method, str(data)) not in self.CurrentURLCheck):
+                        self.GETLinks(URL = Response.url, method = method)
                     """
                     URL join을 위해 경로 체크
                     urlparse("https://www.google.com/path/example/").path -> /path/example/

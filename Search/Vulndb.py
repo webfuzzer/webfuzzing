@@ -5,10 +5,10 @@ from urllib.parse import parse_qs, urlencode, urlparse, urljoin
 from Search.payloads import fuzzer_payloads
 from bs4 import BeautifulSoup, Comment
 from Utils.utils import RandomString, double_randint
+from requests.exceptions import TooManyRedirects
 from base64 import b64decode
 from Crawler import sessions
 import warnings
-import sys, os
 import re
 
 warnings.filterwarnings("ignore", category=UserWarning, module='bs4')
@@ -44,6 +44,8 @@ attr = {
     'body':13
 }
 
+STRING_OR_COMMENT_REMOVE_REGEX = """([`'"](?!'"`).*?[`'"])|(\/\/.*)|(\/\*((.|\n)*)\*\/)"""
+
 class ReflectedXSS:
     def __init__(self, datatable, **info):
         """
@@ -72,7 +74,6 @@ class ReflectedXSS:
                             self.attribute_injection, \
                                 self.cross_site_scriping_pay\
                                     = fuzzer_payloads.xss()
-        self.REGEX_sub = """([`'"](?!'"`).*?[`'"])|(\/\/.*)|(\/\*((.|\n)*)\*\/)"""
         self.datatable = datatable
         self.sess = sessions().init_sess()
         self.input_payload = ''
@@ -214,7 +215,7 @@ class ReflectedXSS:
             for script_pay in self.script_pay:
                 soup = BeautifulSoup(self.string_search_text(script_pay), 'html.parser')
                 for script_tag in soup.find_all('script'):
-                    temp = re.sub(self.REGEX_sub, '', script_tag.string)
+                    temp = re.sub(STRING_OR_COMMENT_REMOVE_REGEX, '', script_tag.string)
                     if True in [i in temp for i in [ 'alert()', 'prompt()', 'print()', 'confirm()']]:
                         print("="*50)
                         print('script 취약점 발견!')
@@ -245,6 +246,7 @@ class OpenRedirect:
                 cookies = content[attr['request_cookies']],
             )
             self.sess.close()
+            continue
 
     def case_request(self, data, headers, cookies):
         if headers.get('Content-Length'):
@@ -255,144 +257,141 @@ class OpenRedirect:
                 if type(value) == list:
                     value = value[0]
                 self.req_info = {'vector':'qs','key':key, 'input':dict(qs)}
-                self.redirect_check()
+                self.payloads_injection()
         if data:
             for key, value in data.items():
                 self.req_info = {'vector':'data', 'key':key, 'input':dict(data)}
-                self.redirect_check()
+                self.payloads_injection()
         if cookies:
             for key, value in cookies.items():
                 self.req_info = {'vector':'cookies','key':key, 'input':dict(cookies)}
-                self.redirect_check()
+                self.payloads_injection()
         if headers:
             for key, value in headers.items():
                 self.req_info = {'vector':'headers','key':key, 'input':dict(headers)}
-                self.redirect_check()
+                self.payloads_injection()
 
-    def pay_request(self, pay = ''):
-        """
-        search for a random string in response body
-        """
-
-        temp = self.req_info['input']
-        pay = pay
-        if self.req_info['vector'] == 'fragment':
-            r = self.sess.request(self.method, self.urinfo._replace(**{self.req_info['vector']:pay}).geturl(), **self.info)
-        elif self.req_info['vector'] == 'qs':
-            temp[self.req_info['key']] = pay
-            r = self.sess.request(self.method, self.urinfo._replace(query=urlencode(temp, doseq=True)).geturl(), **self.info)
-        else:
-            temp[self.req_info['key']] = pay
-            r = self.sess.request(self.method, self.current_url, **{self.req_info['vector']:temp}, **self.info)
-
-        return r
-
-    def redirect_check(self):
-        """
-        1. 만약 파라미터로 인해 이미 리다이렉션이 되는 코드가 있는 경우
-            1.1. 파라미터를 없앤 뒤 redirect 감지
-        """
-        for redirect in self.open_redirect_pay:
-            self.r = self.pay_request(redirect)
-            if self.r.headers.get('Location'):
+    def payloads_injection(self):
+        self.is_redirect_check()
+        for redirect_payloads in self.open_redirect_pay:
+            r = self.redirect_check_before_request(redirect_payloads.format(self.urinfo.netloc))
+            if r.is_redirect or r.headers.get('Location'):
                 print('='*50)
                 print('[header] : open redirect 취약점 감지됨')
                 print(self.current_url)
                 print(self.req_info)
                 return
-            soup = BeautifulSoup(self.r.text, 'html.parser')
+            soup = BeautifulSoup(r.text, 'html.parser')
             for script in soup.find_all('script'):
                 for js in script.string.splitlines():
-                    if js in ['locatio', 'open'] and redirect in js:
+                    temp = re.sub(STRING_OR_COMMENT_REMOVE_REGEX, '', js)
+                    if ('location' in temp or 'open' in temp) and ('example.com' in temp or 'google.com' in temp):
                         print('='*50)
                         print('[js] : open redirect 취약점 감지됨')
                         print(self.current_url)
                         print(self.req_info)
                         return
 
-class SQLInjection:
-    def __init__(self, datatable) -> None:
-        self.database = datatable
-        self.sess = sessions.init_sess()
+    def pay_request(self, pay = '', allow_redirects = False):
+        """
+        search for a random string in response body
+        """
+        if pay:
+            temp = self.req_info['input']
+            pay = pay
+            if self.req_info['vector'] == 'fragment':
+                r = self.sess.request(self.method, self.urinfo._replace(fragment=pay).geturl(), **(self.info | {'allow_redirects':allow_redirects}))
+            elif self.req_info['vector'] == 'qs':
+                temp[self.req_info['key']] = pay
+                r = self.sess.request(self.method, self.urinfo._replace(query=urlencode(temp, doseq=True)).geturl(), **(self.info | {'allow_redirects':allow_redirects}))
+            else:
+                temp[self.req_info['key']] = pay
+                r = self.sess.request(self.method, self.current_url, **{self.req_info['vector']:temp}, **(self.info | {'allow_redirects':allow_redirects}))
+        else:
+            if self.req_info['vector'] == 'fragment':
+                r = self.sess.request(self.method, self.urinfo._replace(fragment='').geturl(), **(self.info | {'allow_redirects':allow_redirects}))
+            elif self.req_info['vector'] == 'qs':
+                r = self.sess.request(self.method, self.urinfo._replace(query='').geturl(), **(self.info | {'allow_redirects':allow_redirects}))
+            else:
+                r = self.sess.request(self.method, self.current_url, **{self.req_info['vector']:''}, **(self.info | {'allow_redirects':allow_redirects}))
 
-class CrossSiteRequestForgery:
-    def __init__(self, datatable) -> None:
-        self.database = datatable
-        self.sess = sessions.init_sess()
+        return r
 
-class NOSQLInjection:
-    def __init__(self, datatable) -> None:
-        self.database = datatable
-        self.sess = sessions.init_sess()
+    def is_redirect_check(self):
+        """
+        만약 특별한 페이로드가 없어도 리다이렉션이 되는지 구분하기 위해
+        해당 공격 벡터 페이로드를 없앤 다음 요청을 해서 리다이렉션이 되는지 구분한다.
+        """
+        r = self.pay_request(allow_redirects=False)
+        if r.is_redirect:
+            self.is_redirect = True
+        else:
+            self.is_redirect = False
 
-class OSCommandInjection:
-    def __init__(self, datatable) -> None:
-        self.database = datatable
-        self.sess = sessions.init_sess()
+    def redirect_check_before_request(self, pay):
+
+        if self.is_redirect:
+            r = self.pay_request(pay, allow_redirects=True)
+            if not len(r.history):
+                return r
+            r.history = [r.history[-1]]
+
+            return r
+
+        else:
+            r = self.pay_request(pay)
+            return r
 
 class ServerSideTemplateInjection:
     def __init__(self, datatable) -> None:
         self.database = datatable
-        self.sess = sessions.init_sess()
         self.pay = fuzzer_payloads.ssti()
-        self.operator = [
-            '+',
-            '-',
-            '*',
-            '/',
-            '%',
-            '**',
-            '^',
-            '&',
-            '|',
-        ]
-        
         self.exploit()
     
     def exploit(self):
-        for content in self.datatable:
+        for content in self.database:
+            self.sess = sessions().init_sess()
             self.body = b64decode(content[attr['body']]).decode()
             self.current_url = content[attr['current_url']]
             self.urinfo = urlparse(self.current_url)
             self.method = content[attr['method']]
-            self.request_key = {
-                'data':content[attr['data']],
-                'headers':content[attr['request_headers']],
-                'cookies':content[attr['request_cookies']],
-            }
-            self.random_operator()
+            try:
+                self.request_key = {
+                    'data':content[attr['data']],
+                    'headers':content[attr['request_headers']],
+                    'cookies':content[attr['request_cookies']],
+                }
+                self.search_text()
+            except Exception as e:
+                continue
 
-    def search_text(self, rs):
+    def search_text(self):
         if self.urinfo.query:
             qs = parse_qs(self.urinfo.query)
             for key, value in qs.items():
                 if type(value) == list:
                     value = value[0]
                 self.req_info = {'vector':'qs','key':key, 'input':dict(qs)}
-                if value in self.body and (rs in self.string_search_text(rs)):
-                    print('SSTI 취약점 발생함!')
-                    print(self.req_info, self.method, self.current_url)
+                if value in self.body:
+                    self.template_syntax_injection()
 
         if self.request_key['data']:
             for key, value in self.request_key['data'].items():
                 self.req_info = {'vector':'data', 'key':key, 'input':dict(self.request_key['data'])}
-                if value in self.body and (rs in self.string_search_text(rs)):
-                    print('SSTI 취약점 발생함!')
-                    print(self.req_info, self.method, self.current_url)
+                if value in self.body:
+                    self.template_syntax_injection()
 
         if self.request_key['cookies']:
             for key, value in self.request_key['cookies'].items():
                 self.req_info = {'vector':'cookies','key':key, 'input':dict(self.request_key['cookies'])}
-                if value in self.body and (rs in self.string_search_text(rs)):
-                    print('SSTI 취약점 발생함!')
-                    print(self.req_info, self.method, self.current_url)
+                if value in self.body:
+                    self.template_syntax_injection()
 
         if self.request_key['headers']:
             for key, value in self.request_key['headers'].items():
                 self.req_info = {'vector':'headers','key':key, 'input':dict(self.request_key['headers'])}
-                if value in self.body and (rs in self.string_search_text(rs)):
-                    print('SSTI 취약점 발생함!')
-                    print(self.req_info, self.method, self.current_url)
+                if value in self.body:
+                    self.template_syntax_injection()
 
     def string_search_text(self, rs):
         """
@@ -404,19 +403,64 @@ class ServerSideTemplateInjection:
             r = self.sess.request(self.method, self.urinfo._replace(**{self.req_info['vector']:rs}).geturl())
         elif self.req_info['vector'] == 'qs':
             temp[self.req_info['key']] = rs
-            r = self.sess.request(self.method, self.urinfo._replace(query=urlencode(temp, doseq=True)).geturl())
+            r = self.sess.request(self.method, self.current_url, params=urlencode(temp, doseq=True))
         else:
             temp[self.req_info['key']] = rs
             r = self.sess.request(self.method, self.current_url, **{self.req_info['vector']:temp})
-
         return r.text
-    def random_operator(self):
-        for op in self.operator:
-            oper = double_randint(2)
-            result = eval(f'{oper[0]}{op}{oper[1]}')
-            self.search_text(result)
+
+    def template_syntax_injection(self):
+        for pay in self.pay:
+            result = str(49)
+            try:
+                if result in self.string_search_text(pay):
+                    print("="*50)
+                    print('SSTI 취약점 발생함!')
+                    print(self.current_url)
+                    print(self.req_info, self.method, self.current_url)
+                    return True
+            except TooManyRedirects as e:
+                continue
+        return False
+
+class SQLInjection:
+    def __init__(self, datatable) -> None:
+        self.database = datatable
+        self.sess = sessions.init_sess()
+
+class NOSQLInjection:
+    def __init__(self, datatable, **info) -> None:
+        self.database = datatable
+        self.sess = sessions.init_sess()
+
+    def exploit(self):
+        for content in self.database:
+            self.sess = sessions().init_sess()
+            self.body = b64decode(content[attr['body']]).decode()
+            self.current_url = content[attr['current_url']]
+            self.urinfo = urlparse(self.current_url)
+            self.method = content[attr['method']]
+            try:
+                self.request_key = {
+                    'data':content[attr['data']],
+                    'headers':content[attr['request_headers']],
+                    'cookies':content[attr['request_cookies']],
+                }
+                self.search_text()
+            except Exception as e:
+                continue
 
 class LocalFileInclusion:
+    def __init__(self, datatable) -> None:
+        self.database = datatable
+        self.sess = sessions.init_sess()
+
+class CrossSiteRequestForgery:
+    def __init__(self, datatable) -> None:
+        self.database = datatable
+        self.sess = sessions.init_sess()
+
+class OSCommandInjection:
     def __init__(self, datatable) -> None:
         self.database = datatable
         self.sess = sessions.init_sess()
