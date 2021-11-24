@@ -53,7 +53,7 @@ class Engine():
         self.URLGroup = Table(tabname, base.metadata, autoload=True, autoload_with=self.engine)
         self.row_to_dict = (lambda r: {c.name: str(getattr(r, c.name)) for c in r.__table__.columns})
 
-    def sqlite_engine_auto_load_select(self, column='*'):
+    def fetch_all(self, column='*'):
 
         if column == '*':
             columns = [self.URLGroup]
@@ -64,6 +64,19 @@ class Engine():
                 return
         sqlite_select_query = select(columns)
         result = self.conn.execute(sqlite_select_query)
+        a = result.fetchall()
+        return a
+
+    def fetch_all_filter(self, column='*', **filter):
+        if column == '*':
+            columns = [self.URLGroup]
+        else:
+            try:
+                columns = [getattr(self.URLGroup.columns, select_column) for select_column in column]
+            except AttributeError:
+                return
+        query = select(columns).filter_by(**filter)
+        result = self.conn.execute(query)
         a = result.fetchall()
         return a
 
