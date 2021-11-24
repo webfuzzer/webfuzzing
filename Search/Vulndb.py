@@ -4,8 +4,8 @@
 from urllib.parse import parse_qs, urlencode, urlparse, urljoin
 from Search.payloads import fuzzer_payloads
 from bs4 import BeautifulSoup, Comment
-from Utils.utils import RandomString, double_randint
-from requests.exceptions import TooManyRedirects
+from Utils.utils import RandomString
+from requests.exceptions import TooManyRedirects, ConnectTimeout
 from base64 import b64decode
 from Crawler import sessions
 import warnings
@@ -45,6 +45,7 @@ attr = {
 }
 
 STRING_OR_COMMENT_REMOVE_REGEX = """([`'"](?!'"`).*?[`'"])|(\/\/.*)|(\/\*((.|\n)*)\*\/)"""
+LINUX_DEFAULT_FILE_ETC_PASSWD_FORMAT_REGEX = r"^(#.*|[a-z]*:[^:]*:[0-9]*:[0-9]*:[^:]*:/[^:]*:/[^:]*)$"
 
 class ReflectedXSS:
     def __init__(self, datatable, **info):
@@ -235,14 +236,12 @@ class OpenRedirect:
     def exploit(self):
         for content in self.database:
             self.sess = sessions().init_sess()
-            self.body = b64decode(content[attr['body']]).decode()
             self.current_url = content[attr['current_url']]
             self.urinfo = urlparse(self.current_url)
             self.method = content[attr['method']]
-            headers = content[attr['request_headers']]
             self.case_request(
                 data = content[attr['data']],
-                headers = headers,
+                headers = content[attr['request_headers']],
                 cookies = content[attr['request_cookies']],
             )
             self.sess.close()
@@ -346,6 +345,7 @@ class ServerSideTemplateInjection:
     def __init__(self, datatable) -> None:
         self.database = datatable
         self.pay = fuzzer_payloads.ssti()
+        self.result = str(49)
         self.exploit()
     
     def exploit(self):
@@ -411,9 +411,8 @@ class ServerSideTemplateInjection:
 
     def template_syntax_injection(self):
         for pay in self.pay:
-            result = str(49)
             try:
-                if result in self.string_search_text(pay):
+                if self.result in self.string_search_text(pay):
                     print("="*50)
                     print('SSTI 취약점 발생함!')
                     print(self.current_url)
@@ -426,12 +425,93 @@ class ServerSideTemplateInjection:
 class SQLInjection:
     def __init__(self, datatable) -> None:
         self.database = datatable
-        self.sess = sessions.init_sess()
+        self.sess = sessions().init_sess()
 
 class NOSQLInjection:
     def __init__(self, datatable, **info) -> None:
+        self.info = info
         self.database = datatable
-        self.sess = sessions.init_sess()
+        self.sess = sessions().init_sess()
+        self.pay = fuzzer_payloads.NOSQLInjection()
+
+        self.exploit()
+
+    def exploit(self):
+        for content in self.database:
+            self.sess = sessions().init_sess()
+            self.current_url = content[attr['current_url']]
+            self.urinfo = urlparse(self.current_url)
+            self.method = content[attr['method']]
+            try:
+                self.request_key = {
+                    'data':content[attr['data']],
+                    'headers':content[attr['request_headers']],
+                    'cookies':content[attr['request_cookies']],
+                }
+                self.search_text()
+            except Exception as e:
+                print('NOSQLInjection :', e)
+                continue
+
+    def search_text(self):
+        if self.urinfo.query:
+            qs = parse_qs(self.urinfo.query)
+            for key, value in qs.items():
+                if type(value) == list:
+                    value = value[0]
+                self.req_info = {'vector':'qs','key':key, 'input':dict(qs)}
+                self.nosql_where_sleep_injection()
+
+        if self.request_key['data']:
+            for key, value in self.request_key['data'].items():
+                self.req_info = {'vector':'data', 'key':key, 'input':dict(self.request_key['data'])}
+                self.nosql_where_sleep_injection()
+
+        if self.request_key['cookies']:
+            for key, value in self.request_key['cookies'].items():
+                self.req_info = {'vector':'cookies','key':key, 'input':dict(self.request_key['cookies'])}
+                self.nosql_where_sleep_injection()
+
+        if self.request_key['headers']:
+            for key, value in self.request_key['headers'].items():
+                self.req_info = {'vector':'headers','key':key, 'input':dict(self.request_key['headers'])}
+                self.nosql_where_sleep_injection()
+
+    def string_search_text(self, rs, timeout=3):
+        """
+        search for a random string in response body
+        """
+        temp = self.req_info['input']
+        rs = rs
+        if self.req_info['vector'] == 'fragment':
+            r = self.sess.request(self.method, self.urinfo._replace(**{self.req_info['vector']:rs}).geturl(), **(self.info | {'timeout':timeout}))
+        elif self.req_info['vector'] == 'qs':
+            temp[self.req_info['key']] = rs
+            r = self.sess.request(self.method, self.current_url, params=urlencode(temp, doseq=True), **(self.info | {'timeout':timeout}))
+        else:
+            temp[self.req_info['key']] = rs
+            r = self.sess.request(self.method, self.current_url, **{self.req_info['vector']:temp}, **(self.info | {'timeout':timeout}))
+        return r.text
+
+    def nosql_where_sleep_injection(self):
+        for pay in self.pay:
+            try:
+                self.string_search_text(pay)
+            except ConnectTimeout:
+                print("="*50)
+                print("NOSQL Injection 취약점 발견!!")
+                print(self.req_info)
+                return
+
+class LocalFileInclusion:
+    def __init__(self, datatable, **info) -> None:
+        self.info = info
+        self.database = datatable
+        self.sess = sessions().init_sess()
+        self.pay = fuzzer_payloads.lfi()
+        self.OPTIONS = (re.MULTILINE | re.IGNORECASE | re.DOTALL)
+
+        self.exploit()
 
     def exploit(self):
         for content in self.database:
@@ -448,24 +528,132 @@ class NOSQLInjection:
                 }
                 self.search_text()
             except Exception as e:
+                print('LFI :', e)
                 continue
 
-class LocalFileInclusion:
-    def __init__(self, datatable) -> None:
-        self.database = datatable
-        self.sess = sessions.init_sess()
+    def search_text(self):
+        if self.urinfo.query:
+            qs = parse_qs(self.urinfo.query)
+            for key, value in qs.items():
+                if type(value) == list:
+                    value = value[0]
+                self.req_info = {'vector':'qs','key':key, 'input':dict(qs)}
+                self.etc_passwd_search()
+
+        if self.request_key['data']:
+            for key, value in self.request_key['data'].items():
+                self.req_info = {'vector':'data', 'key':key, 'input':dict(self.request_key['data'])}
+                self.etc_passwd_search()
+
+        if self.request_key['cookies']:
+            for key, value in self.request_key['cookies'].items():
+                self.req_info = {'vector':'cookies','key':key, 'input':dict(self.request_key['cookies'])}
+                self.etc_passwd_search()
+
+        if self.request_key['headers']:
+            for key, value in self.request_key['headers'].items():
+                self.req_info = {'vector':'headers','key':key, 'input':dict(self.request_key['headers'])}
+                self.etc_passwd_search()
+
+    def string_search_text(self, rs):
+        """
+        search for a random string in response body
+        """
+        temp = self.req_info['input']
+        rs = rs
+        if self.req_info['vector'] == 'fragment':
+            r = self.sess.request(self.method, self.urinfo._replace(**{self.req_info['vector']:rs}).geturl(), **self.info)
+        elif self.req_info['vector'] == 'qs':
+            temp[self.req_info['key']] = rs
+            r = self.sess.request(self.method, self.current_url, params=urlencode(temp, doseq=True), **self.info)
+        else:
+            temp[self.req_info['key']] = rs
+            r = self.sess.request(self.method, self.current_url, **{self.req_info['vector']:temp}, **self.info)
+        return r.text
+
+    def etc_passwd_search(self):
+        for pay in self.pay:
+            r = self.string_search_text(pay)
+            compile = re.compile(LINUX_DEFAULT_FILE_ETC_PASSWD_FORMAT_REGEX, self.OPTIONS)
+            if len(compile.findall(r)):
+                print("="*50)
+                print("LFI 취약점 발견(maybe?)!!")
+                print(self.req_info)
+                return
 
 class CrossSiteRequestForgery:
-    def __init__(self, datatable) -> None:
+    def __init__(self, datatable, **info) -> None:
+        self.info = info
         self.database = datatable
-        self.sess = sessions.init_sess()
+        self.sess = sessions().init_sess()
+
+    def exploit(self):
+        for content in self.database:
+            self.sess = sessions().init_sess()
+            self.body = b64decode(content[attr['body']]).decode()
+            self.current_url = content[attr['current_url']]
+            self.urinfo = urlparse(self.current_url)
+            self.method = content[attr['method']]
+            try:
+                self.request_key = {
+                    'data':content[attr['data']],
+                    'headers':content[attr['request_headers']],
+                    'cookies':content[attr['request_cookies']],
+                }
+                self.search_text()
+            except Exception as e:
+                print('NOSQLInjection :', e)
+                continue
+    
+    def search_text(self):
+        if self.urinfo.query:
+            qs = parse_qs(self.urinfo.query)
+            for key, value in qs.items():
+                if type(value) == list:
+                    value = value[0]
+                self.req_info = {'vector':'qs','key':key, 'input':dict(qs)}
+                self.nosql_where_sleep_injection()
+
+        if self.request_key['data']:
+            for key, value in self.request_key['data'].items():
+                self.req_info = {'vector':'data', 'key':key, 'input':dict(self.request_key['data'])}
+                self.nosql_where_sleep_injection()
+
+        if self.request_key['cookies']:
+            for key, value in self.request_key['cookies'].items():
+                self.req_info = {'vector':'cookies','key':key, 'input':dict(self.request_key['cookies'])}
+                self.nosql_where_sleep_injection()
+
+        if self.request_key['headers']:
+            for key, value in self.request_key['headers'].items():
+                self.req_info = {'vector':'headers','key':key, 'input':dict(self.request_key['headers'])}
+                self.nosql_where_sleep_injection()
+
+    def string_search_text(self, rs, timeout=3):
+        """
+        search for a random string in response body
+        """
+        temp = self.req_info['input']
+        rs = rs
+        if self.req_info['vector'] == 'fragment':
+            r = self.sess.request(self.method, self.urinfo._replace(**{self.req_info['vector']:rs}).geturl(), **(self.info | {'timeout':timeout}))
+        elif self.req_info['vector'] == 'qs':
+            temp[self.req_info['key']] = rs
+            r = self.sess.request(self.method, self.current_url, params=urlencode(temp, doseq=True), **(self.info | {'timeout':timeout}))
+        else:
+            temp[self.req_info['key']] = rs
+            r = self.sess.request(self.method, self.current_url, **{self.req_info['vector']:temp}, **(self.info | {'timeout':timeout}))
+        return r.text
+
+    def csrf_token_matching(self):
+        pass
 
 class OSCommandInjection:
     def __init__(self, datatable) -> None:
         self.database = datatable
-        self.sess = sessions.init_sess()
+        self.sess = sessions().init_sess()
 
 class RemoteFileInclusion:
     def __init__(self, datatable) -> None:
         self.database = datatable
-        self.sess = sessions.init_sess()
+        self.sess = sessions().init_sess()

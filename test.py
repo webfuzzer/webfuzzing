@@ -174,3 +174,9 @@ json.dump(test,f)"""
 # engine = docker.from_env()
 
 # engine.containers.run('ubuntu:18.04', name='test', detach=True)
+from Storage.DB import Engine
+
+engine : Engine = Engine()
+engine.init_conn('18.179.206.187')
+data : tuple = engine.fetch_all_filter(method='POST')
+print(data)
