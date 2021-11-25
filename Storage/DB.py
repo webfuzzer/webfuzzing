@@ -13,7 +13,13 @@ class Engine():
                 **data
         )
         self.sess.add(INFO)
-        self.sess.commit()
+        try:
+            self.sess.commit()
+        except:
+            self.sess.rollback()
+            raise
+        finally:
+            self.sess.close()
 
     def fetch(self):
         return self.sess.query(self.Table).all()

@@ -4,7 +4,7 @@
 from urllib.parse import parse_qs, urlencode, urlparse, urljoin
 from Search.payloads import fuzzer_payloads
 from bs4 import BeautifulSoup, Comment
-from Utils.utils import RandomString
+from Utils.utils import RandomString, double_randint
 from requests.exceptions import TooManyRedirects, ConnectTimeout
 from base64 import b64decode
 from Crawler import sessions
@@ -342,11 +342,22 @@ class OpenRedirect:
             return r
 
 class ServerSideTemplateInjection:
-    def __init__(self, datatable) -> None:
+    def __init__(self, datatable, **info) -> None:
         self.database = datatable
+        self.info = info
         self.pay = fuzzer_payloads.ssti()
-        self.result = str(49)
         self.exploit()
+        self.operator = [
+            '+',
+            '-',
+            '*',
+            '/',
+            '%',
+            '**',
+            '^',
+            '&',
+            '|',
+        ]
     
     def exploit(self):
         for content in self.database:
@@ -411,15 +422,20 @@ class ServerSideTemplateInjection:
 
     def template_syntax_injection(self):
         for pay in self.pay:
-            try:
-                if self.result in self.string_search_text(pay):
-                    print("="*50)
-                    print('SSTI 취약점 발생함!')
-                    print(self.current_url)
-                    print(self.req_info, self.method, self.current_url)
-                    return True
-            except TooManyRedirects as e:
-                continue
+            for op in self.operator:
+                oper = double_randint(2)
+                calc = f'{oper[0]}{op}{oper[1]}'
+                result = eval(calc)
+                self.search_text(result)
+                try:
+                    if result in self.string_search_text(pay.format(result)):
+                        print("="*50)
+                        print('SSTI 취약점 발생함!')
+                        print(self.current_url)
+                        print(self.req_info, self.method, self.current_url)
+                        return True
+                except TooManyRedirects as e:
+                    continue
         return False
 
 class SQLInjection:
@@ -579,6 +595,7 @@ class LocalFileInclusion:
                 print("="*50)
                 print("LFI 취약점 발견(maybe?)!!")
                 print(self.req_info)
+                print(self.current_url)
                 return
 
 class CrossSiteRequestForgery:

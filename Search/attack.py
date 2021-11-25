@@ -55,7 +55,7 @@ class VulnFuzz:
             # CrossSiteRequestForgery, 'POST'),
             (NOSQLInjection, 'ALL'),
             # OSCommandInjection, 'ALL'),
-            (LocalFileInclusion, 'ALL'),
+            # (LocalFileInclusion, 'ALL'),
             # (RemoteFileInclusion, 'ALL')
         ]
         return
