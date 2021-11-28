@@ -16,10 +16,6 @@ def CreateModel(table):
             }', '{
                 self.method
             }', '{
-                self.history
-            }', '{
-                self.history_len
-            }', '{
                 self.response_url
             }', '{
                 self.response_cookies
@@ -36,5 +32,11 @@ def CreateModel(table):
             }', '{
                 self.body
             })>"""
+
+            # '{
+            #     self.history
+            # }', '{
+            #     self.history_len
+            # }', 
 
     return URLGroup

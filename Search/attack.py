@@ -28,31 +28,14 @@ class VulnFuzz:
 
         for t in VulnerabilityThreads:
             t.join()
-        
-        # r1 = Thread(target=ReflectedXSS, kwargs={'datatable':self.data,**self.info})
-        # r2 = Thread(target=OpenRedirect, kwargs={'datatable':self.data,**self.info})
-        # r3 = Thread(target=ServerSideTemplateInjection, kwargs={'datatable':data,**self.info})
-        # r1.start()
-        # r2.start()
-        # r3.start()
-        # r1.join()
-        # r2.join()
-        # r3.join()
-
-        # Thread(target=SQLInjection, kwargs={'datatable':data,**info}).start()
-        # Thread(target=CrossSiteRequestForgery, kwargs={'datatable':data,**info}).start()
-        # Thread(target=NOSQLInjection, kwargs={'datatable':data,**info}).start()
-        # Thread(target=OSCommandInjection, kwargs={'datatable':data,**info}).start()
-        # Thread(target=LocalFileInclusion, kwargs={'datatable':data,**info}).start()
-        # Thread(target=RemoteFileInclusion, kwargs={'datatable':data,**info}).start()
 
     def init_vulns(self) -> None:
         self.vulns = [
             (ReflectedXSS, 'ALL'),
             (OpenRedirect, 'ALL'),
             (ServerSideTemplateInjection, 'ALL'),
-            # SQLInjection, 'ALL'),
-            # CrossSiteRequestForgery, 'POST'),
+            #(SQLInjection, 'ALL'),
+            (CrossSiteRequestForgery, 'POST'),
             (NOSQLInjection, 'ALL'),
             # OSCommandInjection, 'ALL'),
             # (LocalFileInclusion, 'ALL'),

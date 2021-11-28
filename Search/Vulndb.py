@@ -1,6 +1,3 @@
-"""
-기본적인 공격 벡터 : QueryString, data(post data), cookies, headers, fragment, path
-"""
 from urllib.parse import parse_qs, urlencode, urlparse, urljoin
 from Search.payloads import fuzzer_payloads
 from bs4 import BeautifulSoup, Comment
@@ -49,24 +46,6 @@ LINUX_DEFAULT_FILE_ETC_PASSWD_FORMAT_REGEX = r"^(#.*|[a-z]*:[^:]*:[0-9]*:[0-9]*:
 
 class ReflectedXSS:
     def __init__(self, datatable, **info):
-        """
-        ReflectedXSS Class:
-            attack vector
-                [
-                    1:QueryString,
-                    2:data(post data),
-                    3:fragment,
-                    4:cookies,
-                    5:headers,
-                    6:path,
-                ]
-        1. sqlite3 database의 정보를 가져와 response body안에 headers, cookies, querystring, data, path 등 request 정보가 response body에 담겨있는지 체크
-        2. 만약 1번 조건에 종촉할 경우 request 정보를 하나 씩 랜덤값으로 바꾼 뒤 요청하여 response body를 가지고 랜덤값이 출력됐는지 체크
-        3. 만약 2번 조건에 종촉할 경우 html injection을 시도하기 위해 request 정보를 html 태그로 바꾼 다음 bs4.BeautifulSoup를 이용하여 search
-        4. 만약 4번 조건에 종촉할 경우 XSS를 발생시킬 수 있는(alert) 페이로드를 주입하여 해당 태그들의 attrs, tag name 비교하여 체크
-        5. 만약 모든 조건에 만족할 경우 보고서 작성 또는 terminal에 print
-        6. exit
-        """
         self.element_eq_pay, \
             self.element_empty_value, \
                 self.element_event, \
@@ -131,9 +110,6 @@ class ReflectedXSS:
                     self.html_injection_test()
 
     def string_search_text(self, rs):
-        """
-        search for a random string in response body
-        """
         temp = self.req_info['input']
         rs = rs
         if self.req_info['vector'] == 'fragment':
@@ -178,16 +154,6 @@ class ReflectedXSS:
                     return
 
     def cross_site_scripting_test(self, vector):
-        """
-        전체적으로 payloads 리스트 수정 할 계획( class으로 가져와 self 호출하기 )
-        1. vector == 'attr':
-            element_event in attr in box for loop
-        2. vector in ['comment', 'element']:
-            cross_site_scripting_pay for loop
-        3. vector == 'script':
-            
-        4. vector == 'style'
-        """
         if vector == 'attr':
             for element_event in self.element_event:
                 for attr in self.attribute_injection:
@@ -292,9 +258,6 @@ class OpenRedirect:
                         return
 
     def pay_request(self, pay = '', allow_redirects = False):
-        """
-        search for a random string in response body
-        """
         if pay:
             temp = self.req_info['input']
             pay = pay
@@ -317,10 +280,6 @@ class OpenRedirect:
         return r
 
     def is_redirect_check(self):
-        """
-        만약 특별한 페이로드가 없어도 리다이렉션이 되는지 구분하기 위해
-        해당 공격 벡터 페이로드를 없앤 다음 요청을 해서 리다이렉션이 되는지 구분한다.
-        """
         r = self.pay_request(allow_redirects=False)
         if r.is_redirect:
             self.is_redirect = True
@@ -405,9 +364,6 @@ class ServerSideTemplateInjection:
                     self.template_syntax_injection()
 
     def string_search_text(self, rs):
-        """
-        search for a random string in response body
-        """
         temp = self.req_info['input']
         rs = rs
         if self.req_info['vector'] == 'fragment':
@@ -493,10 +449,7 @@ class NOSQLInjection:
                 self.req_info = {'vector':'headers','key':key, 'input':dict(self.request_key['headers'])}
                 self.nosql_where_sleep_injection()
 
-    def string_search_text(self, rs, timeout=3):
-        """
-        search for a random string in response body
-        """
+    def string_search_text(self, rs, array = False,timeout=3):
         temp = self.req_info['input']
         rs = rs
         if self.req_info['vector'] == 'fragment':
@@ -572,9 +525,6 @@ class LocalFileInclusion:
                 self.etc_passwd_search()
 
     def string_search_text(self, rs):
-        """
-        search for a random string in response body
-        """
         temp = self.req_info['input']
         rs = rs
         if self.req_info['vector'] == 'fragment':
@@ -647,9 +597,6 @@ class CrossSiteRequestForgery:
                 self.nosql_where_sleep_injection()
 
     def string_search_text(self, rs, timeout=3):
-        """
-        search for a random string in response body
-        """
         temp = self.req_info['input']
         rs = rs
         if self.req_info['vector'] == 'fragment':
