@@ -9,7 +9,6 @@ from Crawler import sessions
 import warnings
 import re
 from requests.exceptions import *
-from Discord.bot import *
 
 warnings.filterwarnings("ignore", category=UserWarning, module='bs4')
 
@@ -389,43 +388,41 @@ class SQLInjection:
         self.name=self.__class__.__name__
         self.Exploit()
 
-    def Exploit(self,TimeQuery):
+    def Exploit(self):
         for content in self.datatable:
             try:        
                 self.html = b64decode(content[attr['body']]).decode()
-                #print(TimeQuery)
-                self.request_text(TimeQuery,current_url = content[attr['current_url']],data=(content[attr['data']]),method=content[attr['method']],\
+                self.request_text(current_url = content[attr['current_url']],data=(content[attr['data']]),method=content[attr['method']],\
                 header=content[attr['request_headers']],cookie=content[attr['request_cookies']])
-            except:
+            except Exception as e:
+                print(e)
                 continue
             
-    def request_text(self,name,TimeQuery,current_url,data,method,header,cookie):
-        self.URL = current_url # url+path
+    def request_text(self,current_url,data,method,header,cookie):
+        self.URL = current_url
         payload={}
-        for key in data.keys(): #values 무시
-            for pay in TimeQuery:
-                print(TimeQuery)
+        for key in data.keys():
+            for pay in self.TimeQuery:
                 payload=dict(data)
                 payload[key]=pay
                 if method in ['GET','PUT','HEAD']:
                     try:
-                        r = self.sess.request(method,self.URL, params = payload,timeout=3)    
+                        self.sess.request(method,self.URL, params = payload,timeout=3)    
                     except Timeout:
-                        return Report(name,method,self.URL,payload)
+                        report(vuln='SQLI',url=self.URL,req_info=payload,pay=pay)
                     except Exception as e:
-                        print(e)
+                        continue
 
                 elif method == 'POST':
                     if header.get('Content-Length'):
                         header['Content-Length'] = ''
                     try:
-                        r = self.sess.request(method,self.URL, data = payload ,timeout=3)
-                    except Timeout :
-                        return Report(name,method,self.URL,payload)
+                        self.sess.request(method,self.URL, data = payload ,timeout=3)
+                    except Timeout:
+                        return report(vuln='SQLI',url=self.URL,req_info=payload,pay=pay)
 
                     except Exception as e:
-                        print(e)
-                
+                        continue             
 
 class NOSQLInjection:
     def __init__(self, datatable, **info) -> None:

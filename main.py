@@ -6,7 +6,6 @@ from Search.attack import VulnFuzz
 from tldextract import extract
 from Crawler import URL
 import argparse
-from Discord.bot import *
 
 if __name__ == "__main__":
     
@@ -22,5 +21,4 @@ if __name__ == "__main__":
         Crawling = URL(url, **{})
         Crawling.Crawler()
         Crawling.closed()
-        Discord_bot(url)
         VulnFuzz(domain, **{})
