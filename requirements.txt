@@ -4,3 +4,5 @@ requests
 selenium
 pyyaml
 bs4
+discord
+sqlite3

@@ -34,7 +34,7 @@ class VulnFuzz:
             (ReflectedXSS, 'ALL'),
             (OpenRedirect, 'ALL'),
             (ServerSideTemplateInjection, 'ALL'),
-            #(SQLInjection, 'ALL'),
+            (SQLInjection, 'ALL'),
             (CrossSiteRequestForgery, 'POST'),
             (NOSQLInjection, 'ALL'),
             # OSCommandInjection, 'ALL'),

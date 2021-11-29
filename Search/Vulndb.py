@@ -1,6 +1,6 @@
 from typing import Counter
 from urllib.parse import parse_qs, urlencode, urlparse, urljoin
-from Search.payloads import fuzzer_payloads
+from Search.payloads import *
 from bs4 import BeautifulSoup, Comment
 from Utils.utils import RandomString, double_randint
 from requests.exceptions import TooManyRedirects, ConnectTimeout
@@ -8,6 +8,8 @@ from base64 import b64decode
 from Crawler import sessions
 import warnings
 import re
+from requests.exceptions import *
+from Discord.bot import *
 
 warnings.filterwarnings("ignore", category=UserWarning, module='bs4')
 
@@ -378,9 +380,52 @@ class ServerSideTemplateInjection:
         return False
 
 class SQLInjection:
-    def __init__(self, datatable) -> None:
-        self.database = datatable
+
+    def __init__(self, datatable, **info):
+        self.datatable = datatable
+        self.info = info
         self.sess = sessions().init_sess()
+        self.TimeQuery=fuzzer_payloads.SQLInjection()
+        self.name=self.__class__.__name__
+        self.Exploit()
+
+    def Exploit(self,TimeQuery):
+        for content in self.datatable:
+            try:        
+                self.html = b64decode(content[attr['body']]).decode()
+                #print(TimeQuery)
+                self.request_text(TimeQuery,current_url = content[attr['current_url']],data=(content[attr['data']]),method=content[attr['method']],\
+                header=content[attr['request_headers']],cookie=content[attr['request_cookies']])
+            except:
+                continue
+            
+    def request_text(self,name,TimeQuery,current_url,data,method,header,cookie):
+        self.URL = current_url # url+path
+        payload={}
+        for key in data.keys(): #values 무시
+            for pay in TimeQuery:
+                print(TimeQuery)
+                payload=dict(data)
+                payload[key]=pay
+                if method in ['GET','PUT','HEAD']:
+                    try:
+                        r = self.sess.request(method,self.URL, params = payload,timeout=3)    
+                    except Timeout:
+                        return Report(name,method,self.URL,payload)
+                    except Exception as e:
+                        print(e)
+
+                elif method == 'POST':
+                    if header.get('Content-Length'):
+                        header['Content-Length'] = ''
+                    try:
+                        r = self.sess.request(method,self.URL, data = payload ,timeout=3)
+                    except Timeout :
+                        return Report(name,method,self.URL,payload)
+
+                    except Exception as e:
+                        print(e)
+                
 
 class NOSQLInjection:
     def __init__(self, datatable, **info) -> None:
