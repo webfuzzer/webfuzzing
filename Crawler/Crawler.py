@@ -75,9 +75,9 @@ class URL:
                         Response = self.sess.request(method, URJOIN, **self.info)
                 except InvalidSchema:
                     return
-                self.CurrentURLCheck.add((Response.url, method, str(data),))
-                if Response.history and (not self.DataURLCheck(Response.url, method, str(data))):
-                        return
+                self.CurrentURLCheck.add((URJOIN, method, str(data),))
+                # if self.DataURLCheck(Response.url, method, str(data)):
+                #         return
                 html = Response.content.decode("utf-8", "replace")
                 print(URJOIN)
                 self.engine.add(
@@ -93,6 +93,8 @@ class URL:
                     data = data,
                     body = b64encode(html.encode()).decode(),
                 )
+                if Response.history and (Response.url != URJOIN):
+                    self.GETLinks(Response.url, method, data)
                 URLParseCurrentURL = urlparse(self.CurrentURL)
                 if URINFO.path != URLParseCurrentURL.path:
                     self.CurrentURL = URLParseCurrentURL._replace(path=URINFO.path).geturl()
@@ -119,7 +121,7 @@ class URL:
                             if self.DataURLCheck(attr_in_link, method, str(data)):
                                 self.GETLinks(URL = attr_in_link, method = method)
         except BaseException as e:
-            print(e)
+            return
 
     def DataURLCheck(self, url, method, data):
         if not (urlparse(url).netloc == self.FirstURLParse.netloc):

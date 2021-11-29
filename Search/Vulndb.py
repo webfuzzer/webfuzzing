@@ -1,3 +1,4 @@
+from typing import Counter
 from urllib.parse import parse_qs, urlencode, urlparse, urljoin
 from Search.payloads import fuzzer_payloads
 from bs4 import BeautifulSoup, Comment
@@ -29,20 +30,27 @@ attr = {
     'first_url':1,
     'current_url':2,
     'method':3,
-    'history':4,
-    'history_len':5,
-    'response_url':6,
-    'response_cookies':7,
-    'response_headers':8,
-    'response_status':9,
-    'request_cookies':10,
-    'request_headers':11,
-    'data':12,
-    'body':13
+    # 'history':4,
+    # 'history_len':5,
+    'response_url':4,
+    'response_cookies':5,
+    'response_headers':6,
+    'response_status':7,
+    'request_cookies':8,
+    'request_headers':9,
+    'data':10,
+    'body':11
 }
 
 STRING_OR_COMMENT_REMOVE_REGEX = """([`'"](?!'"`).*?[`'"])|(\/\/.*)|(\/\*((.|\n)*)\*\/)"""
 LINUX_DEFAULT_FILE_ETC_PASSWD_FORMAT_REGEX = r"^(#.*|[a-z]*:[^:]*:[0-9]*:[0-9]*:[^:]*:/[^:]*:/[^:]*)$"
+
+def report(vuln, url, req_info, pay):
+    print("="*50)
+    print(f"{vuln} 취약점 발견!")
+    print(f"URL: {url}")
+    print(f"Request: {req_info}")
+    print(f"Payload: {pay}")
 
 class ReflectedXSS:
     def __init__(self, datatable, **info):
@@ -161,10 +169,7 @@ class ReflectedXSS:
                         rs = attr.format(element_event, box)
                         soup = BeautifulSoup(self.string_search_text(rs), 'html.parser')
                         if soup.find(attrs={element_event.lower():box}):
-                            print("="*50)
-                            print('attrs 취약점 발견!')
-                            print(self.current_url)
-                            print(rs)
+                            report(vuln='XSS',url=self.current_url,req_info=self.req_info,pay=rs)
                             return True
 
         elif vector in ['comment', 'element']:
@@ -172,10 +177,7 @@ class ReflectedXSS:
                 alert_soup = BeautifulSoup(alert, 'html.parser').find()
                 return_soup = BeautifulSoup(self.string_search_text(alert), 'html.parser')
                 if return_soup.find(attrs=alert_soup.attrs, name=alert_soup.name, text=alert_soup.text):
-                    print("="*50)
-                    print('element 취약점 발견!!!!')
-                    print(self.current_url)
-                    print(return_soup)
+                    report(vuln='XSS',url=self.current_url,req_info=self.req_info,pay=alert)
                     return True
             return False
         elif vector == 'script':
@@ -184,10 +186,7 @@ class ReflectedXSS:
                 for script_tag in soup.find_all('script'):
                     temp = re.sub(STRING_OR_COMMENT_REMOVE_REGEX, '', script_tag.string)
                     if True in [i in temp for i in [ 'alert()', 'prompt()', 'print()', 'confirm()']]:
-                        print("="*50)
-                        print('script 취약점 발견!')
-                        print(self.current_url)
-                        print(script_pay)
+                        report(vuln='XSS',url=self.current_url,req_info=self.req_info,pay=script_pay)
                         return True
         return False
 
@@ -241,20 +240,14 @@ class OpenRedirect:
         for redirect_payloads in self.open_redirect_pay:
             r = self.redirect_check_before_request(redirect_payloads.format(self.urinfo.netloc))
             if r.is_redirect or r.headers.get('Location'):
-                print('='*50)
-                print('[header] : open redirect 취약점 감지됨')
-                print(self.current_url)
-                print(self.req_info)
+                report(vuln='Open Redirection',url=self.current_url,req_info=self.req_info,pay=redirect_payloads)
                 return
             soup = BeautifulSoup(r.text, 'html.parser')
             for script in soup.find_all('script'):
                 for js in script.string.splitlines():
                     temp = re.sub(STRING_OR_COMMENT_REMOVE_REGEX, '', js)
                     if ('location' in temp or 'open' in temp) and ('example.com' in temp or 'google.com' in temp):
-                        print('='*50)
-                        print('[js] : open redirect 취약점 감지됨')
-                        print(self.current_url)
-                        print(self.req_info)
+                        report(vuln='Open Redirection',url=self.current_url,req_info=self.req_info,pay=redirect_payloads)
                         return
 
     def pay_request(self, pay = '', allow_redirects = False):
@@ -305,18 +298,15 @@ class ServerSideTemplateInjection:
         self.database = datatable
         self.info = info
         self.pay = fuzzer_payloads.ssti()
-        self.exploit()
         self.operator = [
             '+',
-            '-',
             '*',
-            '/',
-            '%',
             '**',
             '^',
             '&',
             '|',
         ]
+        self.exploit()
     
     def exploit(self):
         for content in self.database:
@@ -325,15 +315,13 @@ class ServerSideTemplateInjection:
             self.current_url = content[attr['current_url']]
             self.urinfo = urlparse(self.current_url)
             self.method = content[attr['method']]
-            try:
-                self.request_key = {
-                    'data':content[attr['data']],
-                    'headers':content[attr['request_headers']],
-                    'cookies':content[attr['request_cookies']],
-                }
-                self.search_text()
-            except Exception as e:
-                continue
+
+            self.request_key = {
+                'data':content[attr['data']],
+                'headers':content[attr['request_headers']],
+                'cookies':content[attr['request_cookies']],
+            }
+            self.search_text()
 
     def search_text(self):
         if self.urinfo.query:
@@ -342,26 +330,26 @@ class ServerSideTemplateInjection:
                 if type(value) == list:
                     value = value[0]
                 self.req_info = {'vector':'qs','key':key, 'input':dict(qs)}
-                if value in self.body:
-                    self.template_syntax_injection()
+                if value in self.body:\
+                    self.template_syntax_injection(counting=int(self.body.count("49")))
 
         if self.request_key['data']:
             for key, value in self.request_key['data'].items():
                 self.req_info = {'vector':'data', 'key':key, 'input':dict(self.request_key['data'])}
                 if value in self.body:
-                    self.template_syntax_injection()
+                    self.template_syntax_injection(counting=int(self.body.count("49")))
 
         if self.request_key['cookies']:
             for key, value in self.request_key['cookies'].items():
                 self.req_info = {'vector':'cookies','key':key, 'input':dict(self.request_key['cookies'])}
                 if value in self.body:
-                    self.template_syntax_injection()
+                    self.template_syntax_injection(counting=int(self.body.count("49")))
 
         if self.request_key['headers']:
             for key, value in self.request_key['headers'].items():
                 self.req_info = {'vector':'headers','key':key, 'input':dict(self.request_key['headers'])}
                 if value in self.body:
-                    self.template_syntax_injection()
+                    self.template_syntax_injection(counting=int(self.body.count("49")))
 
     def string_search_text(self, rs):
         temp = self.req_info['input']
@@ -376,22 +364,17 @@ class ServerSideTemplateInjection:
             r = self.sess.request(self.method, self.current_url, **{self.req_info['vector']:temp})
         return r.text
 
-    def template_syntax_injection(self):
+    def template_syntax_injection(self, counting):
         for pay in self.pay:
-            for op in self.operator:
-                oper = double_randint(2)
-                calc = f'{oper[0]}{op}{oper[1]}'
-                result = eval(calc)
-                self.search_text(result)
-                try:
-                    if result in self.string_search_text(pay.format(result)):
-                        print("="*50)
-                        print('SSTI 취약점 발생함!')
-                        print(self.current_url)
-                        print(self.req_info, self.method, self.current_url)
-                        return True
-                except TooManyRedirects as e:
-                    continue
+            payload = pay.format('7*7')
+            try:
+                count = self.string_search_text(payload)
+                if count.count("49") == (counting + 1):
+                    report(vuln='SSTI',url=self.current_url,req_info=self.req_info,pay=payload)
+                    return True
+            except Exception as e:
+                print("errror : ",e)
+                continue
         return False
 
 class SQLInjection:

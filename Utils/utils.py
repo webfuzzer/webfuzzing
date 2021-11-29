@@ -6,4 +6,4 @@ def RandomString(strlen, digit=True):
     return ''.join([choice(randstr) for _ in range(0,strlen)])
 
 def double_randint(len):
-    return (randint(0,9) for _ in range(0,len))
+    return list([randint(0,9) for _ in range(0,len)])

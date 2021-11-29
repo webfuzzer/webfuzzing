@@ -1,6 +1,6 @@
 import sys
 sys.dont_write_bytecode = True
-sys.setrecursionlimit(1000000000)
+# sys.setrecursionlimit(1000000000)
 
 from Search.attack import VulnFuzz
 from tldextract import extract
@@ -13,7 +13,7 @@ if __name__ == "__main__":
     parser.add_argument('-d', '--domain', help='input domain', dest='domain', default=False)
     
     args = parser.parse_args()
-    url = (args.url)
+    url = args.url
 
     if url:
         domain = extract(url).domain
