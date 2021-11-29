@@ -4,7 +4,7 @@ from discord import channel
 from discord.embeds import Embed #비동기적 코드 동작
 from discord.ext import commands
 import tldextract as tld
-import sys,os,re
+import re
 
 
 Token='OTEwMzQyMTQ4MjY2ODExNDEz.YZRcMQ.wzwkkwd-XJL_IjK78XgFWxzVJP4'
@@ -21,6 +21,7 @@ class DiscordBot:
 
     @bot.event
     async def on_message(self,message): 
+        
         content = message.content 
         guild = message.guild 
         author = message.author 
@@ -32,13 +33,11 @@ class DiscordBot:
         if content.startswith('!'):
             if argc >= 2:
                 for arg in args:
-                # name=argc[1]
-                    command=args[0]
                     argv = re.split("\s+", content[1:])
-                    print(argv)
-                    commands(argv[0])
+                    if argv[0] in commands:
+                        commands(argv[0])
         else:
-            await channel.send("input {} value".format(args[0]))
+            await channel.send("input {} value".format(self.argv[0]))
              
 class Command:
 
@@ -58,35 +57,27 @@ class Command:
         await channel.send(embed=greet)   
 
     @bot.command()
-    async def Category(self,args):
-        for arg in args: 
-            if arg:
-                if True in[arg == i.name for i in self.guild.categories]:
-                    await channel.send(f"[{arg}] is existed. input other category name")                                    
-                else:
-                    category = await self.guild.create_category(arg)
-                    category_id=category
-                    print(f'Create Category : {category.name}')
-                    self.Fuzzing()
-                    await channel.send(f'Create [{category.name}] Category Completed')
-            else:
-                await channel.send("YOU CAN'T FUZZING! SO , Please Input Category Name!") 
+    async def Category(self,arg):
+        if True in[arg == i.name for i in bot.guild.categories]:
+            await channel.send(f"[{arg}] is existed. input other category name")                                    
+        else:
+            category = await self.guild.create_category(arg)
+            category_id=category
+            print(f'Create Category : {category.name}')
+            self.Fuzzing()
+            await channel.send(f'Create [{category.name}] Category Completed')
             
     @bot.command()
-    async def Fuzzing(self,args,wfb_channel,category_id):                
-        for arg in args:
-            domain = tld.extract(arg).domain
-            if domain:
-                if True in [domain == i.name for i in self.guild.text_channels]:
-                    await channel.send("this URL is existed. Input other URL")
-                else:    
-                    channelcreate = await self.create_text_channel(domain, category=category_id)
-                    wfb_channel[channelcreate.name] = arg
-                    print(f'[{channelcreate.name}] Channel ID : {self.channel.id}')
+    async def Fuzzing(self,arg,wfb_channel,category_id):                
+        domain = tld.extract(arg).domain
+        if True in [domain == i.name for i in self.guild.text_channels]:
+            await channel.send("this URL is existed. Input other URL")
+        else:    
+            channelcreate = await self.create_text_channel(domain, category=category_id)
+            wfb_channel[channelcreate.name] = arg
+            print(f'[{channelcreate.name}] Channel ID : {self.channel.id}')
+            await channel.send(f'Create [{self.channel.name}] Channel Completed')
 
-                    await channel.send(f'Create [{self.channel.name}] Channel Completed')
-            else:
-                await channel.send(f"DO NOT NEED FUZZING?")
 
     @bot.event
     async def on_guild_channel_create(self,channel,wfb_channel):
