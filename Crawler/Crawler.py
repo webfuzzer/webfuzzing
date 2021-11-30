@@ -63,6 +63,7 @@ class URL:
     def GETLinks(self, URL, method = 'GET', data={}):
         URINFO = urlparse(URL)
         URJOIN = self.URLJOIN(URL)
+
         try:
             if self.DataURLCheck(URL, method, str(data)):
                 try:
@@ -75,6 +76,7 @@ class URL:
                         Response = self.sess.request(method, URJOIN, **self.info)
                 except InvalidSchema:
                     return
+
                 self.CurrentURLCheck.add((URJOIN, method, str(data),))
                 # if self.DataURLCheck(Response.url, method, str(data)):
                 #         return
@@ -93,13 +95,17 @@ class URL:
                     data = data,
                     body = b64encode(html.encode()).decode(),
                 )
+
                 if Response.history and (Response.url != URJOIN):
                     self.GETLinks(Response.url, method, data)
+
                 URLParseCurrentURL = urlparse(self.CurrentURL)
                 if URINFO.path != URLParseCurrentURL.path:
                     self.CurrentURL = URLParseCurrentURL._replace(path=URINFO.path).geturl()
+
                 htmlparser = BeautifulSoup(html, 'html.parser')
                 form = htmlparser.find("form")
+
                 if form:
                     form_action = form.get('action')
                     form_method = form.get('method')
@@ -107,19 +113,26 @@ class URL:
                     action_url = urljoin(Response.url,form_action)
                     form_in_elements_data = {}
                     form_submit_elements = form.find_all(name=['button', 'input', 'select', 'textarea'])
+
                     for SubmitElement in form_submit_elements:
                         value = SubmitElement.attrs.get('value')
                         form_in_elements_data.setdefault(SubmitElement.attrs.get('name'), (value if value else self.rs))
+
                     if form_method != 'POST':
                         action_url = urljoin(action_url, "?" + urlencode(form_in_elements_data, doseq=True))
+
                     if self.DataURLCheck(action_url, (form_method), str(form_in_elements_data)):
-                        self.GETLinks(URL = action_url, method = method)
+                        self.GETLinks(URL = action_url, method = form_method, data = form_in_elements_data)
+
+
                 for attribute, tag in self.tags.items():
                     for element in htmlparser.find_all(tag):
                         if attribute in element.attrs:
                             attr_in_link = urljoin(Response.url, element.get(attribute))
+
                             if self.DataURLCheck(attr_in_link, method, str(data)):
                                 self.GETLinks(URL = attr_in_link, method = method)
+
         except BaseException as e:
             return
 
