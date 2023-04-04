@@ -1,5 +1,5 @@
 tldextract
-sqlalchemy
+sqlalchemy<2.0.0
 requests
 selenium
 pyyaml

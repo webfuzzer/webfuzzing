@@ -81,7 +81,7 @@ class URL:
                 # if self.DataURLCheck(Response.url, method, str(data)):
                 #         return
                 html = Response.content.decode("utf-8", "replace")
-                print(URJOIN)
+
                 self.engine.add(
                     first_url = self.URL,
                     current_url = URJOIN,
@@ -108,7 +108,7 @@ class URL:
 
                 if form:
                     form_action = form.get('action')
-                    form_method = form.get('method')
+                    form_method = form.get('method').upper()
                     form_method = (form_method if form_method in ['GET','PUT','POST','HEAD'] else 'GET')
                     action_url = urljoin(Response.url,form_action)
                     form_in_elements_data = {}

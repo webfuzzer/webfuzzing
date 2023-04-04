@@ -245,11 +245,14 @@ class OpenRedirect:
                 return
             soup = BeautifulSoup(r.text, 'html.parser')
             for script in soup.find_all('script'):
-                for js in script.string.splitlines():
-                    temp = re.sub(STRING_OR_COMMENT_REMOVE_REGEX, '', js)
-                    if ('location' in temp or 'open' in temp) and ('example.com' in temp or 'google.com' in temp):
-                        report(vuln='Open Redirection',url=self.current_url,req_info=self.req_info,pay=redirect_payloads)
-                        return
+                try:
+                    for js in script.string.splitlines():
+                        temp = re.sub(STRING_OR_COMMENT_REMOVE_REGEX, '', js)
+                        if ('location' in temp or 'open' in temp) and ('example.com' in temp or 'google.com' in temp):
+                            report(vuln='Open Redirection',url=self.current_url,req_info=self.req_info,pay=redirect_payloads)
+                            return
+                except BaseException:
+                    return
 
     def pay_request(self, pay = '', allow_redirects = False):
         if pay:
