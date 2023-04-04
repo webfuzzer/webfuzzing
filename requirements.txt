@@ -4,4 +4,3 @@ requests
 selenium
 pyyaml
 bs4
-sqlite3
