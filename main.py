@@ -21,4 +21,5 @@ if __name__ == "__main__":
         Crawling = URL(url, **{})
         Crawling.Crawler()
         Crawling.closed()
+        print('vuln exploit!')
         VulnFuzz(domain, **{})
